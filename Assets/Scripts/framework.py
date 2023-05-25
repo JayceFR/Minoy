@@ -60,8 +60,9 @@ class Player():
     def collision_test(self, tiles):
         hitlist = []
         for tile in tiles:
-            if self.rect.colliderect(tile.get_rect()):
-                hitlist.append(tile)
+            if tile.touchable:
+                if self.rect.colliderect(tile.get_rect()):
+                    hitlist.append(tile)
         return hitlist
     
     def collision_checker(self, tiles):
@@ -94,9 +95,10 @@ class Player():
         return self.rect
 
 class Tiles():
-    def __init__(self, x, y, width, height, img) -> None:
+    def __init__(self, x, y, width, height, img, touchable) -> None:
         self.img = img
         self.rect = pygame.rect.Rect(x, y, width, height)
+        self.touchable = touchable
     
     def draw(self, display, scroll):
         display.blit(self.img, (self.rect.x - scroll[0], self.rect.y - scroll[1]) )

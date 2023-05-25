@@ -9,14 +9,17 @@ pygame.display.set_caption("Minoy")
 display = pygame.Surface((screen_w//2, screen_h//2))
 
 
-def make_tile_rects(map, entities):
+def make_tile_rects(map, entities, non_touchables):
     y = 0
     tile_rects = []
     for row in map:
         x = 0
         for element in row:
             if element != "0":
-                tile_rects.append(engine.Tiles(x*16, y*16, 16, 16, entities[element]))
+                if element not in non_touchables:
+                    tile_rects.append(engine.Tiles(x*24, y*24, 24, 24, entities[element], True))
+                else:
+                    tile_rects.append(engine.Tiles(x*24, y*24, 24, 24, entities[element], False))                  
                 #display.blit(entities[element], (x*16 - scroll[0], y * 16 - scroll[1]))
             x += 1
         y += 1
@@ -34,7 +37,15 @@ start = True
 tiles = []
 for x in range(9):
     current_tile = pygame.image.load("./Assets/Tiles/tile{tile_pos}.png".format(tile_pos = str(x+1))).convert_alpha()
-    tiles.append(current_tile)
+    tile_dup = current_tile.copy()
+    tile_dup = pygame.transform.scale(tile_dup, (24,24))
+    tiles.append(tile_dup)
+btiles = []
+for x in range(9):
+    current_tile = pygame.image.load("./Assets/Tiles/btile{tile_pos}.png".format(tile_pos = str(x+1))).convert_alpha()
+    tile_dup = current_tile.copy()
+    tile_dup = pygame.transform.scale(tile_dup, (24,24))
+    btiles.append(tile_dup)
 
 #Game Variables
 run = True
@@ -50,8 +61,8 @@ for row in data:
     map.append(list(row))
 
 #Entities list
-entities = {"1" : tiles[0], "2" : tiles[1], "3" : tiles[2], "4" : tiles[3], "5" : tiles[4], "6" : tiles[5], "7" : tiles[6], "8" : tiles[7], "9" : tiles[8]}
-
+entities = {"1" : tiles[0], "2" : tiles[1], "3" : tiles[2], "4" : tiles[3], "5" : tiles[4], "6" : tiles[5], "7" : tiles[6], "8" : tiles[7], "9" : tiles[8], "!" : btiles[0], "¬" : btiles[1], ")" : btiles[2], "$" : btiles[3], "%" : btiles[4] , "^" : btiles[5], "&" : btiles[6], "*" : btiles[7], "(" : btiles[8]}
+non_touchable_entities = ["!", "¬", ")", "$", "%", "^", "&", "*", "("]
 #Digging
 dig_cooldown = 200
 dig_last_update = 0
@@ -60,7 +71,7 @@ dig_right = False
 dig_left = False
 dig_up = False
 
-tile_rects = make_tile_rects(map, entities)
+tile_rects = make_tile_rects(map, entities, non_touchable_entities)
 
 while run:
     clock.tick(60)
