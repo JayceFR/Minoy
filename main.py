@@ -89,6 +89,7 @@ while run:
     player.move(tile_rects, dig_down, dig_right, dig_left, dig_up)
     player.draw(display, scroll)
 
+
     dig_down = False
     dig_right = False
     dig_left = False
