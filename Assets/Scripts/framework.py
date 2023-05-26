@@ -1,7 +1,7 @@
 import pygame
 
 class Player():
-    def __init__(self, x ,y, width, height, img, idle_animation, run_animation) -> None:
+    def __init__(self, x ,y, width, height, img, idle_animation, run_animation, right_shot) -> None:
         self.rect = pygame.rect.Rect(x, y, width, height)
         self.movement = [0,0]
         self.display_x = 0
@@ -18,6 +18,13 @@ class Player():
         self.facing_right = True
         self.facing_left = False
         self.img = img
+        self.show_cooldown = 200
+        self.show_last_update = 0
+        self.show_right = False
+        self.shot_frame = 0
+        self.shot_frame_update = 0
+        self.shot_frame_cooldown = 25
+        self.right_shot = right_shot
 
     def draw(self, display, scroll):
         self.display_x = self.rect.x
@@ -38,6 +45,8 @@ class Player():
                 flip = self.idle_animation[self.frame].copy()
                 flip = pygame.transform.flip(flip, True, False)
                 display.blit(flip, self.rect)
+        if self.show_right:
+            display.blit(self.right_shot[self.shot_frame], (self.rect.x + 22, self.rect.y + 5))
         self.rect.x = self.display_x
         self.rect.y = self.display_y
     
@@ -55,6 +64,16 @@ class Player():
             self.movement[0] -= self.speed
             self.moving_left = False
         
+
+        if self.show_right:
+            if time - self.shot_frame_update > self.shot_frame_cooldown:
+                self.shot_frame += 1
+                if self.shot_frame >= 4:
+                    self.shot_frame = 3
+            if time - self.show_last_update > self.show_cooldown:
+                self.show_last_update = time
+                self.show_right = False
+        
         self.movement[1] += 10
 
         self.collision_type = self.collision_checker(tiles)
@@ -66,6 +85,10 @@ class Player():
                 if tile.health <= 0:
                     tiles.remove(tile)
         if dig_right:
+            self.show_right = True
+            self.shot_frame = 0
+            self.shot_frame_update = time
+            self.show_last_update = time
             for tile in self.collision_type["right"][1]:
                 if tile.breakable:
                     tile.health -= 20

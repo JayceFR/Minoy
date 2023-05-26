@@ -30,16 +30,19 @@ def make_tile_rects(map, entities, non_touchables):
     tree_locs = []
     btree_locs = []
     grass_locs = []
+    bush_locs = []
     for row in map:
         x = 0
         for element in row:
-            if element == "g":
+            if element == "b":
+                bush_locs.append((x*24,y*24))
+            elif element == "g":
                 grass_locs.append((x*24,y*24))
             elif element == "x":
                 tile_rects.append(engine.Tiles(x*24, y*24, 24, 24, entities["2"], True, False))
             elif element == "t":
                 tree_locs.append((x*24,y*24))
-            elif element == "b":
+            elif element == "y":
                 btree_locs.append((x*24, y*24))
             elif element != "0":
                 if element not in non_touchables:
@@ -49,7 +52,7 @@ def make_tile_rects(map, entities, non_touchables):
                 #display.blit(entities[element], (x*16 - scroll[0], y * 16 - scroll[1]))
             x += 1
         y += 1
-    return tile_rects, tree_locs, btree_locs, grass_locs
+    return tile_rects, tree_locs, btree_locs, grass_locs, bush_locs
 
 def draw_tiles(tile_rects, display, scroll):
     for tile in tile_rects:
@@ -86,13 +89,22 @@ btree_img_copy = pygame.image.load("./Assets/Sprites/btree.png").convert_alpha()
 btree_img = btree_img_copy.copy()
 btree_img = pygame.transform.scale(btree_img_copy, (btree_img_copy.get_width()*3, btree_img_copy.get_height()*3))
 btree_img.set_colorkey((0,0,0))
+bush_img_copy = pygame.image.load("./Assets/Sprites/bush.png").convert_alpha()
+bush_img = bush_img_copy.copy()
+bush_img = pygame.transform.scale(bush_img_copy, (bush_img_copy.get_width()*2, bush_img_copy.get_height()*2))
+bush_img.set_colorkey((0,0,0))
+right_shot_img_copy = pygame.image.load("./Assets/Entities/right_shot.png").convert_alpha()
+right_shot = []
+for x in range(4):
+    right_shot.append(get_image(right_shot_img_copy, x, 11, 23, 2, (0,0,0)))
+
 #Quantum
 player_idle_animation = []
 player_run_animation = []
 for x in range(4):
     player_idle_animation.append(get_image(miner_idle_spritesheet, x, 47, 67, 2/3, (255,0,0)))
     player_run_animation.append(get_image(miner_run_spritesheet, x, 47, 67, 2/3, (255,0,0)))
-player = engine.Player(50,50,miner_img.get_width(),miner_img.get_height(), miner_img, player_idle_animation, player_run_animation)
+player = engine.Player(50,50,miner_img.get_width(),miner_img.get_height(), miner_img, player_idle_animation, player_run_animation, right_shot)
 #Grass
 grasses = []
 grass_loc = []
@@ -123,7 +135,7 @@ dig_right = False
 dig_left = False
 dig_up = False
 
-tile_rects, tree_locs, btree_locs, grass_loc = make_tile_rects(map, entities, non_touchable_entities)
+tile_rects, tree_locs, btree_locs, grass_loc, bush_locs = make_tile_rects(map, entities, non_touchable_entities)
 
 grasses = []
 for loc in grass_loc:
@@ -156,7 +168,7 @@ while run:
         display.blit(tree_img, (loc[0] - scroll[0] - 79, loc[1] - scroll[1] - 152))
     for loc in btree_locs:
         display.blit(btree_img, (loc[0] - scroll[0] - 79, loc[1] - scroll[1] - 162))
-
+    
     player.move(time, tile_rects, dig_down, dig_right, dig_left, dig_up)
     player.draw(display, scroll)
 
@@ -165,6 +177,9 @@ while run:
 
     #Blitting Items After Blitting The Player
     blit_grass(grasses, display, scroll, player)
+    #Bush drawing
+    for loc in bush_locs:
+        display.blit(bush_img, (loc[0] - scroll[0] - 32, loc[1] - scroll[1]))
 
     dig_down = False
     dig_right = False
