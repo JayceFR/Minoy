@@ -1,7 +1,7 @@
 import pygame
 
 class Player():
-    def __init__(self, x ,y, width, height) -> None:
+    def __init__(self, x ,y, width, height, img, idle_animation, run_animation) -> None:
         self.rect = pygame.rect.Rect(x, y, width, height)
         self.movement = [0,0]
         self.display_x = 0
@@ -10,23 +10,48 @@ class Player():
         self.moving_right = False
         self.collision_type = {}
         self.speed = 4
+        self.idle_animation = idle_animation
+        self.run_animation = run_animation
+        self.frame = 0
+        self.frame_last_update = 0
+        self.frame_cooldown = 200
+        self.facing_right = True
+        self.facing_left = False
+        self.img = img
 
     def draw(self, display, scroll):
         self.display_x = self.rect.x
         self.display_y = self.rect.y
         self.rect.x -= scroll[0]
         self.rect.y -= scroll[1]
-        pygame.draw.rect(display, (255,0,0), self.rect)
+        #pygame.draw.rect(display, (255,0,0), self.rect)
+        if self.moving_right:
+            display.blit(self.run_animation[self.frame], self.rect)
+        elif self.moving_left:
+            flip = self.run_animation[self.frame].copy()
+            flip = pygame.transform.flip(flip, True, False)
+            display.blit(flip, self.rect)
+        else:
+            if self.facing_right:
+                display.blit(self.idle_animation[self.frame], self.rect)
+            else:
+                flip = self.idle_animation[self.frame].copy()
+                flip = pygame.transform.flip(flip, True, False)
+                display.blit(flip, self.rect)
         self.rect.x = self.display_x
         self.rect.y = self.display_y
     
-    def move(self, tiles, dig_down, dig_right, dig_left, dig_up):
+    def move(self, time,  tiles, dig_down, dig_right, dig_left, dig_up):
         self.movement = [0, 0]
 
         if self.moving_right:
+            self.facing_right = True
+            self.facing_left = False
             self.movement[0] += self.speed
             self.moving_right = False
         if self.moving_left:
+            self.facing_left = True
+            self.facing_right = False
             self.movement[0] -= self.speed
             self.moving_left = False
         
@@ -60,6 +85,12 @@ class Player():
             self.moving_left = True
         if key[pygame.K_d]:
             self.moving_right = True
+        
+        if time - self.frame_last_update > self.frame_cooldown:
+            self.frame += 1
+            if self.frame >= 4:
+                self.frame = 0
+            self.frame_last_update = time
     
     def collision_test(self, tiles):
         hitlist = []

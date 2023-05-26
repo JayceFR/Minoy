@@ -10,7 +10,7 @@ class Master():
         self.particle_generation_last_update = 0
 
     def add_particles(self):
-        self.particles.append(Particles(random.randint(-100,3000)//2, random.randint(-150,150)//2, 5))
+        self.particles.append(Particles(random.randint(-100,3000)//2, random.randint(-150,-50)//2, 5))
 
     def recursive_call(self, time, display, scroll, dt):
         if self.particles != []:

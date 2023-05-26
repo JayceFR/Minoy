@@ -1,5 +1,6 @@
 import pygame
 import Assets.Scripts.framework as engine
+import Assets.Scripts.bg_particles as bg_particles
 
 screen_w = 1000
 screen_h = 500
@@ -8,6 +9,13 @@ screen = pygame.display.set_mode((screen_w,screen_h))
 pygame.display.set_caption("Minoy")
 display = pygame.Surface((screen_w//2, screen_h//2))
 
+#Getting image from spirtesheet
+def get_image(sheet, frame, width, height, scale, colorkey):
+    image = pygame.Surface((width, height)).convert_alpha()
+    image.blit(sheet, (0, 0), ((frame * width), 0, width, height))
+    image = pygame.transform.scale(image, (width * scale, height * scale))
+    image.set_colorkey(colorkey)
+    return image
 
 def make_tile_rects(map, entities, non_touchables):
     y = 0
@@ -30,7 +38,7 @@ def draw_tiles(tile_rects, display, scroll):
         tile.draw(display, scroll)
 
 true_scroll = [0,0]
-player = engine.Player(50,50,32,32)
+bg_particle_effect = bg_particles.Master()
 start = True
 
 #Loading images
@@ -46,6 +54,19 @@ for x in range(9):
     tile_dup = current_tile.copy()
     tile_dup = pygame.transform.scale(tile_dup, (24,24))
     btiles.append(tile_dup)
+miner_img_copy = pygame.image.load("./Assets/Sprites/miner_img.png").convert_alpha()
+miner_img = miner_img_copy.copy()
+miner_img = pygame.transform.scale(miner_img, (miner_img_copy.get_width()//1.5, miner_img_copy.get_height()//1.5))
+miner_img.set_colorkey((255,0,0))
+miner_idle_spritesheet = pygame.image.load("./Assets/Sprites/miner_idle.png").convert_alpha()
+miner_run_spritesheet = pygame.image.load("./Assets/Sprites/miner_run.png").convert_alpha()
+#Quantum
+player_idle_animation = []
+player_run_animation = []
+for x in range(4):
+    player_idle_animation.append(get_image(miner_idle_spritesheet, x, 47, 67, 2/3, (255,0,0)))
+    player_run_animation.append(get_image(miner_run_spritesheet, x, 47, 67, 2/3, (255,0,0)))
+player = engine.Player(50,50,miner_img.get_width(),miner_img.get_height(), miner_img, player_idle_animation, player_run_animation)
 
 #Game Variables
 run = True
@@ -86,9 +107,11 @@ while run:
 
     draw_tiles(tile_rects, display, scroll)
 
-    player.move(tile_rects, dig_down, dig_right, dig_left, dig_up)
+    player.move(time, tile_rects, dig_down, dig_right, dig_left, dig_up)
     player.draw(display, scroll)
 
+    #Background Particles
+    bg_particle_effect.recursive_call(time, display, scroll, 1)
 
     dig_down = False
     dig_right = False
