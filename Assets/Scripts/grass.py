@@ -29,7 +29,7 @@ class grass():
             ]
         #25,51,45
         #pygame.draw.polygon(display, (25,51,45), points)
-        pygame.draw.polygon(display, (20,20,50), points)
+        pygame.draw.polygon(display, (43,99,27), points)
     
     def move(self):
         if self.angle == 270:
