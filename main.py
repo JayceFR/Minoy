@@ -32,6 +32,13 @@ def draw_text(text, font, text_col, x, y, display):
     img = font.render(text, True, text_col)
     display.blit(img, (x, y))
 
+def palette_swap(surf, old_c, new_c):
+    img_copy = pygame.Surface(surf.get_size())
+    img_copy.fill(new_c)
+    surf.set_colorkey(old_c)
+    img_copy.blit(surf, (0,0))
+    return img_copy
+
 
 def make_tile_rects(map, entities, non_touchables):
     y = 0
@@ -169,6 +176,8 @@ element_font = pygame.font.Font("./Assets/Fonts/jayce.ttf", 17)
 tile_rects, tree_locs, btree_locs, grass_loc, bush_locs = make_tile_rects(map, entities, non_touchable_entities)
 #Fusion
 fusion = [-1, -1]
+fusion_dict = {}
+fusion_rect = pygame.rect.Rect(350,210,32,32)
 grasses = []
 for loc in grass_loc:
     x_pos = loc[0]
@@ -176,7 +185,6 @@ for loc in grass_loc:
         x_pos += 2.5
         grasses.append(g.grass([x_pos, loc[1]+14], 2, 18))
 click = False
-alloy_selected = False
 
 while run:
     clock.tick(60)
@@ -238,6 +246,14 @@ while run:
                 draw_text(inven_items[mapping[str(x)]][2], element_font, (255,255,255), left - 15, 210, display)
         left += 25
 
+    #Drawing fusion rect
+    pygame.draw.rect(display, (0,0,0), fusion_rect, border_radius=7)
+    if len(fusion_dict) == 1:
+        for key in fusion_dict.keys():
+            display.blit(entities[key], (fusion_rect.x, fusion_rect.y))
+    elif len(fusion_dict) > 1:
+        pass
+
     if click:
         display.blit(inven_items[mapping[str(fusion[0])]][1], mouse_pos)
 
@@ -266,32 +282,23 @@ while run:
                     dig_up = True
                     dig_last_update = time
             if event.key == pygame.K_SPACE:
-                print(inventory)
+                print(inventory, fusion_dict)
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 if not click:
                     if current_overlay >= 0 and current_overlay <= 4:
                         fusion[0] = current_overlay
-                        if len(inventory[current_overlay]) > 1:
-                            print("Alloy selected")
-                            alloy_selected = True
                         click = True
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 if click:
-                    if not alloy_selected:
-                        if current_overlay != fusion[0] and current_overlay >= 0 and current_overlay <= 4:
-                            #perfrom the swap 
-                            if mapping[str(fusion[0])] in inventory[current_overlay]:
-                                inventory[current_overlay][mapping[str(fusion[0])]] += 1
-                            else:
-                                inventory[current_overlay].update({mapping[str(fusion[0])]:1})
-                            inventory[fusion[0]][mapping[str(fusion[0])]] -= 1
-                    else:
-                        for key, value in inventory[fusion[0]].items():
-                            inventory[current_overlay].update({key:value})
-                        inventory[fusion[0]] = {mapping[str(fusion[0])] : 0}
-                        alloy_selected = False
+                    if fusion_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
+                        #perfrom the swap 
+                        if mapping[str(fusion[0])] in fusion_dict:
+                            fusion_dict[mapping[str(fusion[0])]] += 1
+                        else:
+                            fusion_dict.update({mapping[str(fusion[0])]:1})
+                        inventory[fusion[0]][mapping[str(fusion[0])]] -= 1
                     click = False             
     surf = pygame.transform.scale(display, (screen_w, screen_h))
     screen.blit(surf, (0,0))
