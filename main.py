@@ -1,11 +1,14 @@
-#TODO -> ADD Fusion
 #TODO -> Attack animations
+#TODO -> Level design
 #TODO -> Shaders
 
 import pygame
+import random
+import math
 import Assets.Scripts.framework as engine
 import Assets.Scripts.bg_particles as bg_particles
 import Assets.Scripts.grass as g
+import Assets.Scripts.sparks as spark
 pygame.init()
 screen_w = 800
 screen_h = 500
@@ -31,13 +34,6 @@ def blit_grass(grasses, display, scroll, player):
 def draw_text(text, font, text_col, x, y, display):
     img = font.render(text, True, text_col)
     display.blit(img, (x, y))
-
-def palette_swap(surf, old_c, new_c):
-    img_copy = pygame.Surface(surf.get_size())
-    img_copy.fill(new_c)
-    surf.set_colorkey(old_c)
-    img_copy.blit(surf, (0,0))
-    return img_copy
 
 
 def make_tile_rects(map, entities, non_touchables):
@@ -121,7 +117,9 @@ bush_img = pygame.transform.scale(bush_img_copy, (bush_img_copy.get_width()*2, b
 bush_img.set_colorkey((0,0,0))
 element_sprite_sheet = pygame.image.load("./Assets/Entities/minerals.png").convert_alpha()
 right_shot_img_copy = pygame.image.load("./Assets/Entities/right_shot.png").convert_alpha()
+alloy_sprite_sheet = pygame.image.load("./Assets/Entities/fake_minerals.png").convert_alpha()
 right_shot = []
+sparks = []
 for x in range(4):
     right_shot.append(get_image(right_shot_img_copy, x, 11, 23, 2, (0,0,0)))
 element_imgs = []
@@ -129,6 +127,9 @@ element_logo_imgs = []
 for x in range(6):
     element_imgs.append(get_image(element_sprite_sheet, x, 16, 16, 2, (0,0,0)))
     element_logo_imgs.append(get_image(element_sprite_sheet, x, 16, 16, 1, (0,0,0)))
+alloy_imgs = []
+for x in range(6):
+    alloy_imgs.append(get_image(alloy_sprite_sheet, x, 16,16, 2, (0,0,0)))
 #Quantum
 player_idle_animation = []
 player_run_animation = []
@@ -177,7 +178,8 @@ tile_rects, tree_locs, btree_locs, grass_loc, bush_locs = make_tile_rects(map, e
 #Fusion
 fusion = [-1, -1]
 fusion_dict = {}
-fusion_rect = pygame.rect.Rect(350,210,32,32)
+fusion_rect = pygame.rect.Rect(350,210,40,40)
+fusion_display_tile = alloy_imgs[0]
 grasses = []
 for loc in grass_loc:
     x_pos = loc[0]
@@ -250,12 +252,16 @@ while run:
     pygame.draw.rect(display, (0,0,0), fusion_rect, border_radius=7)
     if len(fusion_dict) == 1:
         for key in fusion_dict.keys():
-            display.blit(entities[key], (fusion_rect.x, fusion_rect.y))
+            display.blit(entities[key], (fusion_rect.x + 4, fusion_rect.y + 5))
     elif len(fusion_dict) > 1:
-        pass
+        display.blit(fusion_display_tile, (fusion_rect.x + 4, fusion_rect.y + 5))
 
     if click:
         display.blit(inven_items[mapping[str(fusion[0])]][1], mouse_pos)
+    
+    for s in sparks:
+        s.move(1)
+        s.draw(display)
 
     dig_down = False
     dig_right = False
@@ -299,6 +305,9 @@ while run:
                         else:
                             fusion_dict.update({mapping[str(fusion[0])]:1})
                         inventory[fusion[0]][mapping[str(fusion[0])]] -= 1
+                        fusion_display_tile = alloy_imgs[random.randint(0, len(alloy_imgs)-1)]
+                        for x in range(50):
+                            sparks.append(spark.Spark([fusion_rect.x + 15 ,fusion_rect.y + 15], math.radians(random.randint(0,360)), random.randint(2,5), (random.randint(0,255),random.randint(0,255),random.randint(0,255)), 2, 1))
                     click = False             
     surf = pygame.transform.scale(display, (screen_w, screen_h))
     screen.blit(surf, (0,0))
