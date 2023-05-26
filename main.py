@@ -1,5 +1,3 @@
-#TODO -> ADD Inventory management
-#TODO -> ADD Mining elements
 #TODO -> ADD Fusion
 #TODO -> Attack animations
 #TODO -> Shaders
@@ -34,23 +32,6 @@ def draw_text(text, font, text_col, x, y, display):
     img = font.render(text, True, text_col)
     display.blit(img, (x, y))
 
-def blit_inventory(display, inventory, item_slot, inven_items, mapping, font, mouse_pos, element_font):
-    left = 150
-    pygame.draw.line(display, (255,255,255), (left - 10, 250), (left, 220))
-    pygame.draw.line(display, (255,255,255), (left, 220), (272, 220))
-    pygame.draw.line(display, (255,255,255), (272,220), (282, 250))
-    for x in range(len(inventory)):
-        if pygame.rect.Rect(left, 225, 20, 20).collidepoint(mouse_pos[0], mouse_pos[1]):
-            pygame.draw.rect(display, (0,150,0), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)    
-        else:
-            pygame.draw.rect(display, (46,94,100), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)
-        pygame.draw.rect(display, (0,0,0), pygame.rect.Rect(left + 2, 225 + 2.5, 20 - 2.5, 20 - 2.5), border_radius=4)
-        if inventory[x][mapping[str(x)]] > 0:
-            display.blit(inven_items[mapping[str(x)]][1], (left + 2.2 , 225 + 2.2))
-            draw_text(str(inventory[x][mapping[str(x)]]), font, (255,255,255), left + 9, 242, display)
-            if pygame.rect.Rect(left, 225, 20, 20).collidepoint(mouse_pos[0], mouse_pos[1]):
-                draw_text(inven_items[mapping[str(x)]][2], element_font, (255,255,255), left - 15, 210, display)
-        left += 25
 
 def make_tile_rects(map, entities, non_touchables):
     y = 0
@@ -186,13 +167,16 @@ mapping = {"0": "c", "1": "s", "2": "l", "3": "m", "4": "a"}
 inven_font = pygame.font.Font("./Assets/Fonts/jayce.ttf", 7)
 element_font = pygame.font.Font("./Assets/Fonts/jayce.ttf", 17)
 tile_rects, tree_locs, btree_locs, grass_loc, bush_locs = make_tile_rects(map, entities, non_touchable_entities)
-
+#Fusion
+fusion = [-1, -1]
 grasses = []
 for loc in grass_loc:
     x_pos = loc[0]
     while x_pos < loc[0] + 32:
         x_pos += 2.5
         grasses.append(g.grass([x_pos, loc[1]+14], 2, 18))
+click = False
+alloy_selected = False
 
 while run:
     clock.tick(60)
@@ -234,7 +218,29 @@ while run:
     #Bush drawing
     for loc in bush_locs:
         display.blit(bush_img, (loc[0] - scroll[0] - 32, loc[1] - scroll[1]))
-    blit_inventory(display, inventory, inven_slot, inven_items, mapping, inven_font, mouse_pos, element_font)
+
+    #Inventory management
+    left = 150
+    pygame.draw.line(display, (255,255,255), (left - 10, 250), (left, 220))
+    pygame.draw.line(display, (255,255,255), (left, 220), (272, 220))
+    pygame.draw.line(display, (255,255,255), (272,220), (282, 250))
+    for x in range(len(inventory)):
+        if pygame.rect.Rect(left, 225, 20, 20).collidepoint(mouse_pos[0], mouse_pos[1]):
+            pygame.draw.rect(display, (0,150,0), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)    
+        else:
+            pygame.draw.rect(display, (46,94,100), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)
+        pygame.draw.rect(display, (0,0,0), pygame.rect.Rect(left + 2, 225 + 2.5, 20 - 2.5, 20 - 2.5), border_radius=4)
+        if inventory[x][mapping[str(x)]] > 0:
+            display.blit(inven_items[mapping[str(x)]][1], (left + 2.2 , 225 + 2.2))
+            draw_text(str(inventory[x][mapping[str(x)]]), inven_font, (255,255,255), left + 9, 242, display)
+            if pygame.rect.Rect(left, 225, 20, 20).collidepoint(mouse_pos[0], mouse_pos[1]):
+                current_overlay = x
+                draw_text(inven_items[mapping[str(x)]][2], element_font, (255,255,255), left - 15, 210, display)
+        left += 25
+
+    if click:
+        display.blit(inven_items[mapping[str(fusion[0])]][1], mouse_pos)
+
     dig_down = False
     dig_right = False
     dig_left = False
@@ -261,6 +267,32 @@ while run:
                     dig_last_update = time
             if event.key == pygame.K_SPACE:
                 print(inventory)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if not click:
+                    if current_overlay >= 0 and current_overlay <= 4:
+                        fusion[0] = current_overlay
+                        if len(inventory[current_overlay]) > 1:
+                            print("Alloy selected")
+                            alloy_selected = True
+                        click = True
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                if click:
+                    if not alloy_selected:
+                        if current_overlay != fusion[0] and current_overlay >= 0 and current_overlay <= 4:
+                            #perfrom the swap 
+                            if mapping[str(fusion[0])] in inventory[current_overlay]:
+                                inventory[current_overlay][mapping[str(fusion[0])]] += 1
+                            else:
+                                inventory[current_overlay].update({mapping[str(fusion[0])]:1})
+                            inventory[fusion[0]][mapping[str(fusion[0])]] -= 1
+                    else:
+                        for key, value in inventory[fusion[0]].items():
+                            inventory[current_overlay].update({key:value})
+                        inventory[fusion[0]] = {mapping[str(fusion[0])] : 0}
+                        alloy_selected = False
+                    click = False             
     surf = pygame.transform.scale(display, (screen_w, screen_h))
     screen.blit(surf, (0,0))
     pygame.display.flip()
