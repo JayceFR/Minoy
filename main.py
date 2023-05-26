@@ -23,7 +23,9 @@ def make_tile_rects(map, entities, non_touchables):
     for row in map:
         x = 0
         for element in row:
-            if element != "0":
+            if element == "x":
+                tile_rects.append(engine.Tiles(x*24, y*24, 24, 24, entities["2"], True, False))
+            elif element != "0":
                 if element not in non_touchables:
                     tile_rects.append(engine.Tiles(x*24, y*24, 24, 24, entities[element], True))
                 else:

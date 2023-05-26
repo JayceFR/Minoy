@@ -61,22 +61,26 @@ class Player():
 
         if dig_down:
             for tile in self.collision_type["bottom"][1]:
-                tile.health -= 20
+                if tile.breakable:
+                    tile.health -= 20
                 if tile.health <= 0:
                     tiles.remove(tile)
         if dig_right:
             for tile in self.collision_type["right"][1]:
-                tile.health -= 20
+                if tile.breakable:
+                    tile.health -= 20
                 if tile.health <= 0:
                     tiles.remove(tile)
         if dig_left:
             for tile in self.collision_type["left"][1]:
-                tile.health -= 20
+                if tile.breakable:
+                    tile.health -= 20
                 if tile.health <= 0:
                     tiles.remove(tile)
         if dig_up:
             for tile in self.collision_type["top"][1]:
-                tile.health -= 20
+                if tile.breakable:
+                    tile.health -= 20
                 if tile.health <= 0:
                     tiles.remove(tile)
 
@@ -130,11 +134,12 @@ class Player():
         return self.rect
 
 class Tiles():
-    def __init__(self, x, y, width, height, img, touchable) -> None:
+    def __init__(self, x, y, width, height, img, touchable, breakable = True) -> None:
         self.img = img
         self.rect = pygame.rect.Rect(x, y, width, height)
         self.touchable = touchable
         self.health = 60
+        self.breakable = breakable
     
     def draw(self, display, scroll):
         display.blit(self.img, (self.rect.x - scroll[0], self.rect.y - scroll[1]) )
