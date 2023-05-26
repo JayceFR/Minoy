@@ -25,6 +25,11 @@ class Player():
         self.shot_frame_update = 0
         self.shot_frame_cooldown = 25
         self.right_shot = right_shot
+        self.jump = False
+        self.jump_last_update = 0
+        self.jump_cooldown = 600
+        self.jump_up_spped = 7
+        self.air_timer = 0
 
     def draw(self, display, scroll):
         self.display_x = self.rect.x
@@ -50,7 +55,7 @@ class Player():
         self.rect.x = self.display_x
         self.rect.y = self.display_y
     
-    def move(self, time,  tiles, dig_down, dig_right, dig_left, dig_up):
+    def move(self, time,  tiles, dig_down, dig_right, dig_left, dig_up, inventory, inven_items):
         self.movement = [0, 0]
 
         if self.moving_right:
@@ -63,6 +68,15 @@ class Player():
             self.facing_right = False
             self.movement[0] -= self.speed
             self.moving_left = False
+        if self.jump:
+            if self.air_timer < 40:
+                self.air_timer += 1
+                self.movement[1] -= self.jump_up_spped
+                self.jump_up_spped -= 0.5
+            else:
+                self.air_timer = 0
+                self.jump = False
+                self.jump_up_spped = 7
         
 
         if self.show_right:
@@ -74,7 +88,8 @@ class Player():
                 self.show_last_update = time
                 self.show_right = False
         
-        self.movement[1] += 10
+        if not self.jump:
+            self.movement[1] += 10
 
         self.collision_type = self.collision_checker(tiles)
 
@@ -83,6 +98,8 @@ class Player():
                 if tile.breakable:
                     tile.health -= 20
                 if tile.health <= 0:
+                    if tile.special_id != "n":
+                        self.add_to_inventory(inventory, inven_items, tile.special_id)
                     tiles.remove(tile)
         if dig_right:
             self.show_right = True
@@ -93,18 +110,24 @@ class Player():
                 if tile.breakable:
                     tile.health -= 20
                 if tile.health <= 0:
+                    if tile.special_id != "n":
+                        self.add_to_inventory(inventory, inven_items, tile.special_id)
                     tiles.remove(tile)
         if dig_left:
             for tile in self.collision_type["left"][1]:
                 if tile.breakable:
                     tile.health -= 20
                 if tile.health <= 0:
+                    if tile.special_id != "n":
+                        self.add_to_inventory(inventory, inven_items, tile.special_id)
                     tiles.remove(tile)
         if dig_up:
             for tile in self.collision_type["top"][1]:
                 if tile.breakable:
                     tile.health -= 20
                 if tile.health <= 0:
+                    if tile.special_id != "n":
+                        self.add_to_inventory(inventory, inven_items, tile.special_id)
                     tiles.remove(tile)
 
         key = pygame.key.get_pressed()
@@ -112,6 +135,12 @@ class Player():
             self.moving_left = True
         if key[pygame.K_d]:
             self.moving_right = True
+        if key[pygame.K_SPACE] or key[pygame.K_w]:
+            if not self.jump and self.collision_type['bottom'][0]:
+                if time - self.jump_last_update > self.jump_cooldown:
+                    #self.music.play()
+                    self.jump = True
+                    self.jump_last_update = time
         
         if time - self.frame_last_update > self.frame_cooldown:
             self.frame += 1
@@ -126,6 +155,10 @@ class Player():
                 if self.rect.colliderect(tile.get_rect()):
                     hitlist.append(tile)
         return hitlist
+    
+    def add_to_inventory(self, inventory, inven_items, id):
+        inventory[inven_items[id][0]][id] += 1
+            
     
     def collision_checker(self, tiles):
         collision_types = {"top": [False, []], "bottom": [False, []], "right": [False, []], "left": [False, []]}
@@ -157,12 +190,13 @@ class Player():
         return self.rect
 
 class Tiles():
-    def __init__(self, x, y, width, height, img, touchable, breakable = True) -> None:
+    def __init__(self, x, y, width, height, img, touchable, breakable = True, special_id = "n") -> None:
         self.img = img
         self.rect = pygame.rect.Rect(x, y, width, height)
         self.touchable = touchable
         self.health = 60
         self.breakable = breakable
+        self.special_id = special_id
     
     def draw(self, display, scroll):
         display.blit(self.img, (self.rect.x - scroll[0], self.rect.y - scroll[1]) )

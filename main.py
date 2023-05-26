@@ -1,9 +1,15 @@
+#TODO -> ADD Inventory management
+#TODO -> ADD Mining elements
+#TODO -> ADD Fusion
+#TODO -> Attack animations
+#TODO -> Shaders
+
 import pygame
 import Assets.Scripts.framework as engine
 import Assets.Scripts.bg_particles as bg_particles
 import Assets.Scripts.grass as g
-
-screen_w = 1000
+pygame.init()
+screen_w = 800
 screen_h = 500
 
 screen = pygame.display.set_mode((screen_w,screen_h))
@@ -24,6 +30,28 @@ def blit_grass(grasses, display, scroll, player):
             grass.colliding()
         grass.draw(display, scroll)
 
+def draw_text(text, font, text_col, x, y, display):
+    img = font.render(text, True, text_col)
+    display.blit(img, (x, y))
+
+def blit_inventory(display, inventory, item_slot, inven_items, mapping, font, mouse_pos, element_font):
+    left = 150
+    pygame.draw.line(display, (255,255,255), (left - 10, 250), (left, 220))
+    pygame.draw.line(display, (255,255,255), (left, 220), (272, 220))
+    pygame.draw.line(display, (255,255,255), (272,220), (282, 250))
+    for x in range(len(inventory)):
+        if pygame.rect.Rect(left, 225, 20, 20).collidepoint(mouse_pos[0], mouse_pos[1]):
+            pygame.draw.rect(display, (0,150,0), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)    
+        else:
+            pygame.draw.rect(display, (46,94,100), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)
+        pygame.draw.rect(display, (0,0,0), pygame.rect.Rect(left + 2, 225 + 2.5, 20 - 2.5, 20 - 2.5), border_radius=4)
+        if inventory[x][mapping[str(x)]] > 0:
+            display.blit(inven_items[mapping[str(x)]][1], (left + 2.2 , 225 + 2.2))
+            draw_text(str(inventory[x][mapping[str(x)]]), font, (255,255,255), left + 9, 242, display)
+            if pygame.rect.Rect(left, 225, 20, 20).collidepoint(mouse_pos[0], mouse_pos[1]):
+                draw_text(inven_items[mapping[str(x)]][2], element_font, (255,255,255), left - 15, 210, display)
+        left += 25
+
 def make_tile_rects(map, entities, non_touchables):
     y = 0
     tile_rects = []
@@ -35,20 +63,30 @@ def make_tile_rects(map, entities, non_touchables):
         x = 0
         for element in row:
             if element == "b":
-                bush_locs.append((x*24,y*24))
+                bush_locs.append((x*32,y*32))
             elif element == "g":
-                grass_locs.append((x*24,y*24))
+                grass_locs.append((x*32,y*32))
             elif element == "x":
-                tile_rects.append(engine.Tiles(x*24, y*24, 24, 24, entities["2"], True, False))
+                tile_rects.append(engine.Tiles(x*32, y*32, 32, 32, entities["2"], True, False))
             elif element == "t":
-                tree_locs.append((x*24,y*24))
+                tree_locs.append((x*32,y*32))
             elif element == "y":
-                btree_locs.append((x*24, y*24))
+                btree_locs.append((x*32, y*32))
+            elif element == "c":
+                tile_rects.append(engine.Tiles(x*32, y*32, 32, 32, entities[element], True, special_id="c"))
+            elif element == "s":
+                tile_rects.append(engine.Tiles(x*32, y*32, 32, 32, entities[element], True, special_id="s"))
+            elif element == "l":
+                tile_rects.append(engine.Tiles(x*32, y*32, 32, 32, entities[element], True, special_id="l"))
+            elif element == "m":
+                tile_rects.append(engine.Tiles(x*32, y*32, 32, 32, entities[element], True, special_id="m"))
+            elif element == "a":
+                tile_rects.append(engine.Tiles(x*32, y*32, 32, 32, entities[element], True, special_id="a"))
             elif element != "0":
                 if element not in non_touchables:
-                    tile_rects.append(engine.Tiles(x*24, y*24, 24, 24, entities[element], True))
+                    tile_rects.append(engine.Tiles(x*32, y*32, 32, 32, entities[element], True))
                 else:
-                    tile_rects.append(engine.Tiles(x*24, y*24, 24, 24, entities[element], False))                  
+                    tile_rects.append(engine.Tiles(x*32, y*32, 32, 32, entities[element], False))                  
                 #display.blit(entities[element], (x*16 - scroll[0], y * 16 - scroll[1]))
             x += 1
         y += 1
@@ -67,13 +105,13 @@ tiles = []
 for x in range(9):
     current_tile = pygame.image.load("./Assets/Tiles/tile{tile_pos}.png".format(tile_pos = str(x+1))).convert_alpha()
     tile_dup = current_tile.copy()
-    tile_dup = pygame.transform.scale(tile_dup, (24,24))
+    tile_dup = pygame.transform.scale(tile_dup, (32,32))
     tiles.append(tile_dup)
 btiles = []
 for x in range(9):
     current_tile = pygame.image.load("./Assets/Tiles/btile{tile_pos}.png".format(tile_pos = str(x+1))).convert_alpha()
     tile_dup = current_tile.copy()
-    tile_dup = pygame.transform.scale(tile_dup, (24,24))
+    tile_dup = pygame.transform.scale(tile_dup, (32,32))
     btiles.append(tile_dup)
 miner_img_copy = pygame.image.load("./Assets/Sprites/miner_img.png").convert_alpha()
 miner_img = miner_img_copy.copy()
@@ -93,11 +131,16 @@ bush_img_copy = pygame.image.load("./Assets/Sprites/bush.png").convert_alpha()
 bush_img = bush_img_copy.copy()
 bush_img = pygame.transform.scale(bush_img_copy, (bush_img_copy.get_width()*2, bush_img_copy.get_height()*2))
 bush_img.set_colorkey((0,0,0))
+element_sprite_sheet = pygame.image.load("./Assets/Entities/minerals.png").convert_alpha()
 right_shot_img_copy = pygame.image.load("./Assets/Entities/right_shot.png").convert_alpha()
 right_shot = []
 for x in range(4):
     right_shot.append(get_image(right_shot_img_copy, x, 11, 23, 2, (0,0,0)))
-
+element_imgs = []
+element_logo_imgs = []
+for x in range(6):
+    element_imgs.append(get_image(element_sprite_sheet, x, 16, 16, 2, (0,0,0)))
+    element_logo_imgs.append(get_image(element_sprite_sheet, x, 16, 16, 1, (0,0,0)))
 #Quantum
 player_idle_animation = []
 player_run_animation = []
@@ -125,7 +168,7 @@ for row in data:
     map.append(list(row))
 
 #Entities list
-entities = {"1" : tiles[0], "2" : tiles[1], "3" : tiles[2], "4" : tiles[3], "5" : tiles[4], "6" : tiles[5], "7" : tiles[6], "8" : tiles[7], "9" : tiles[8], "!" : btiles[0], "¬" : btiles[1], ")" : btiles[2], "$" : btiles[3], "%" : btiles[4] , "^" : btiles[5], "&" : btiles[6], "*" : btiles[7], "(" : btiles[8]}
+entities = {"1" : tiles[0], "2" : tiles[1], "3" : tiles[2], "4" : tiles[3], "5" : tiles[4], "6" : tiles[5], "7" : tiles[6], "8" : tiles[7], "9" : tiles[8], "!" : btiles[0], "¬" : btiles[1], ")" : btiles[2], "$" : btiles[3], "%" : btiles[4] , "^" : btiles[5], "&" : btiles[6], "*" : btiles[7], "(" : btiles[8], "c" : element_imgs[1], "s" : element_imgs[2], "l" : element_imgs[3], "m" : element_imgs[4], "a" : element_imgs[5]}
 non_touchable_entities = ["!", "¬", ")", "$", "%", "^", "&", "*", "("]
 #Digging
 dig_cooldown = 200
@@ -134,7 +177,14 @@ dig_down = False
 dig_right = False
 dig_left = False
 dig_up = False
-
+#Inventory
+inventory = [{"c":0}, {"s":0}, {"l":0}, {"m":0}, {"a":0}] #Example -> {"c" : 1} Element : Count
+inven_slot = -1
+inven_items = {"c":[0, element_logo_imgs[1], "Copper"], "s": [1, element_logo_imgs[2], "Tin (SN) "], "l": [2, element_logo_imgs[3], "Aluminium"], "m": [3, element_logo_imgs[4], "Manganese"], "a":[4, element_logo_imgs[5], "Antimony"]}
+mapping = {"0": "c", "1": "s", "2": "l", "3": "m", "4": "a"}
+#Fonts
+inven_font = pygame.font.Font("./Assets/Fonts/jayce.ttf", 7)
+element_font = pygame.font.Font("./Assets/Fonts/jayce.ttf", 17)
 tile_rects, tree_locs, btree_locs, grass_loc, bush_locs = make_tile_rects(map, entities, non_touchable_entities)
 
 grasses = []
@@ -149,8 +199,12 @@ while run:
     time = pygame.time.get_ticks()
     display.fill((0,0,0))
 
-    true_scroll[0] += (player.get_rect().x - true_scroll[0] - 242) / 5
-    true_scroll[1] += (player.get_rect().y - true_scroll[1] - 172) / 5
+    mouse_pos = list(pygame.mouse.get_pos())
+    mouse_pos[0] //= 2
+    mouse_pos[1] //= 2
+
+    true_scroll[0] += (player.get_rect().x - true_scroll[0] - 202) / 5
+    true_scroll[1] += (player.get_rect().y - true_scroll[1] - 132) / 5
     scroll = true_scroll.copy()
     scroll[0] = int(scroll[0])
     scroll[1] = int(scroll[1])
@@ -165,11 +219,11 @@ while run:
 
     #Tree drawing
     for loc in tree_locs:
-        display.blit(tree_img, (loc[0] - scroll[0] - 79, loc[1] - scroll[1] - 152))
+        display.blit(tree_img, (loc[0] - scroll[0] - 79, loc[1] - scroll[1] - 145))
     for loc in btree_locs:
-        display.blit(btree_img, (loc[0] - scroll[0] - 79, loc[1] - scroll[1] - 162))
+        display.blit(btree_img, (loc[0] - scroll[0] - 79, loc[1] - scroll[1] - 149))
     
-    player.move(time, tile_rects, dig_down, dig_right, dig_left, dig_up)
+    player.move(time, tile_rects, dig_down, dig_right, dig_left, dig_up, inventory, inven_items)
     player.draw(display, scroll)
 
     #Background Particles
@@ -180,7 +234,7 @@ while run:
     #Bush drawing
     for loc in bush_locs:
         display.blit(bush_img, (loc[0] - scroll[0] - 32, loc[1] - scroll[1]))
-
+    blit_inventory(display, inventory, inven_slot, inven_items, mapping, inven_font, mouse_pos, element_font)
     dig_down = False
     dig_right = False
     dig_left = False
@@ -205,6 +259,8 @@ while run:
                 if time - dig_last_update > dig_cooldown:
                     dig_up = True
                     dig_last_update = time
+            if event.key == pygame.K_SPACE:
+                print(inventory)
     surf = pygame.transform.scale(display, (screen_w, screen_h))
     screen.blit(surf, (0,0))
     pygame.display.flip()

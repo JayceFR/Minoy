@@ -1,0 +1,8 @@
+Alloys
+
+Bronze -> 2 Copper 1 Tin
+Duralumin -> 4 Aluminium 2 Copper 1 Manganese 
+Babbit Metal -> 5 Tin 1 Antimony 1 Copper  
+
+Elements -> Copper Tin Aluminium Manganese Antimony
+Elements -> C      S   L         M         A
