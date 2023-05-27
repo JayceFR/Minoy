@@ -129,6 +129,8 @@ element_sprite_sheet = pygame.image.load("./Assets/Entities/minerals.png").conve
 right_shot_img_copy = pygame.image.load("./Assets/Entities/right_shot.png").convert_alpha()
 alloy_sprite_sheet = pygame.image.load("./Assets/Entities/fake_minerals.png").convert_alpha()
 correct_alloys = pygame.image.load("./Assets/Entities/alloy_imgs.png").convert_alpha()
+right_mine_sprite_sheet = pygame.image.load("./Assets/Sprites/right_mine.png").convert_alpha()
+up_mine_sprite_sheet = pygame.image.load("./Assets/Sprites/up_mine.png").convert_alpha()
 right_shot = []
 sparks = []
 for x in range(4):
@@ -144,13 +146,19 @@ for x in range(6):
 correct_alloy_imgs = []
 for x in range(3):
     correct_alloy_imgs.append(get_image(correct_alloys, x, 25,25, 4, (0,0,0)))
+right_mine_animation = []
+for x in range(4):
+    right_mine_animation.append(get_image(right_mine_sprite_sheet, x, 65, 65, 2/3, (255,0,0)))
+up_mine_animation = []
+for x in range(4):
+    up_mine_animation.append(get_image(up_mine_sprite_sheet, x, 62, 81, 2/3, (255,0,0)))
 #Quantum
 player_idle_animation = []
 player_run_animation = []
 for x in range(4):
     player_idle_animation.append(get_image(miner_idle_spritesheet, x, 47, 67, 2/3, (255,0,0)))
     player_run_animation.append(get_image(miner_run_spritesheet, x, 47, 67, 2/3, (255,0,0)))
-player = engine.Player(50,50,miner_img.get_width(),miner_img.get_height(), miner_img, player_idle_animation, player_run_animation, right_shot)
+player = engine.Player(50,50,miner_img.get_width(),miner_img.get_height(), miner_img, player_idle_animation, player_run_animation, right_shot, right_mine_animation, up_mine_animation)
 #Grass
 grasses = []
 grass_loc = []

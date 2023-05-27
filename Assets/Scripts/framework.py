@@ -1,7 +1,7 @@
 import pygame
 
 class Player():
-    def __init__(self, x ,y, width, height, img, idle_animation, run_animation, right_shot) -> None:
+    def __init__(self, x ,y, width, height, img, idle_animation, run_animation, right_shot, right_mine_animation, up_mine_animation) -> None:
         self.rect = pygame.rect.Rect(x, y, width, height)
         self.movement = [0,0]
         self.display_x = 0
@@ -18,18 +18,19 @@ class Player():
         self.facing_right = True
         self.facing_left = False
         self.img = img
-        self.show_cooldown = 200
+        self.show_cooldown = 600
         self.show_last_update = 0
         self.show_right = False
-        self.shot_frame = 0
-        self.shot_frame_update = 0
-        self.shot_frame_cooldown = 25
+        self.show_left = False
+        self.show_up = False
         self.right_shot = right_shot
         self.jump = False
         self.jump_last_update = 0
         self.jump_cooldown = 600
         self.jump_up_spped = 9
         self.air_timer = 0
+        self.right_mine_animation = right_mine_animation
+        self.up_mine_animation = up_mine_animation
 
     def draw(self, display, scroll):
         self.display_x = self.rect.x
@@ -37,21 +38,29 @@ class Player():
         self.rect.x -= scroll[0]
         self.rect.y -= scroll[1]
         #pygame.draw.rect(display, (255,0,0), self.rect)
-        if self.moving_right:
-            display.blit(self.run_animation[self.frame], self.rect)
-        elif self.moving_left:
-            flip = self.run_animation[self.frame].copy()
+        if self.show_right:
+            display.blit(self.right_mine_animation[self.frame], self.rect)
+        elif self.show_left:
+            flip = self.right_mine_animation[self.frame].copy()
             flip = pygame.transform.flip(flip, True, False)
             display.blit(flip, self.rect)
+        elif self.show_up:
+            display.blit(self.up_mine_animation[self.frame], (self.rect.x, self.rect.y - 12))
         else:
-            if self.facing_right:
-                display.blit(self.idle_animation[self.frame], self.rect)
-            else:
-                flip = self.idle_animation[self.frame].copy()
+            if self.moving_right:
+                display.blit(self.run_animation[self.frame], self.rect)
+            elif self.moving_left:
+                flip = self.run_animation[self.frame].copy()
                 flip = pygame.transform.flip(flip, True, False)
                 display.blit(flip, self.rect)
-        if self.show_right:
-            display.blit(self.right_shot[self.shot_frame], (self.rect.x + 22, self.rect.y + 5))
+            else:
+                if self.facing_right:
+                    display.blit(self.idle_animation[self.frame], self.rect)
+                else:
+                    flip = self.idle_animation[self.frame].copy()
+                    flip = pygame.transform.flip(flip, True, False)
+                    display.blit(flip, self.rect)
+        
         self.rect.x = self.display_x
         self.rect.y = self.display_y
     
@@ -80,13 +89,17 @@ class Player():
         
 
         if self.show_right:
-            if time - self.shot_frame_update > self.shot_frame_cooldown:
-                self.shot_frame += 1
-                if self.shot_frame >= 4:
-                    self.shot_frame = 3
             if time - self.show_last_update > self.show_cooldown:
                 self.show_last_update = time
                 self.show_right = False
+        elif self.show_left:
+            if time - self.show_last_update > self.show_cooldown:
+                self.show_last_update = time
+                self.show_left = False
+        elif self.show_up:
+            if time - self.show_last_update > self.show_cooldown:
+                self.show_last_update = time
+                self.show_up = False
         
         if not self.jump:
             self.movement[1] += 10
@@ -103,8 +116,6 @@ class Player():
                     tiles.remove(tile)
         if dig_right:
             self.show_right = True
-            self.shot_frame = 0
-            self.shot_frame_update = time
             self.show_last_update = time
             for tile in self.collision_type["right"][1]:
                 if tile.breakable:
@@ -114,6 +125,8 @@ class Player():
                         self.add_to_inventory(inventory, inven_items, tile.special_id)
                     tiles.remove(tile)
         if dig_left:
+            self.show_left = True
+            self.show_last_update = time
             for tile in self.collision_type["left"][1]:
                 if tile.breakable:
                     tile.health -= 20
@@ -122,6 +135,8 @@ class Player():
                         self.add_to_inventory(inventory, inven_items, tile.special_id)
                     tiles.remove(tile)
         if dig_up:
+            self.show_up = True
+            self.show_last_update = time
             for tile in self.collision_type["top"][1]:
                 if tile.breakable:
                     tile.health -= 20
