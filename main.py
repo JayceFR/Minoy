@@ -11,6 +11,7 @@ import Assets.Scripts.bg_particles as bg_particles
 import Assets.Scripts.grass as g
 import Assets.Scripts.sparks as spark
 import Assets.Scripts.typewriter as typewriter
+import Assets.Scripts.scientist as science
 pygame.init()
 screen_w = 800
 screen_h = 500
@@ -46,11 +47,17 @@ def make_tile_rects(map, entities, non_touchables):
     btree_locs = []
     grass_locs = []
     bush_locs = []
+    scientist_loc = []
+    player_loc = []
     for row in map:
         x = 0
         for element in row:
-            if element == "b":
+            if element == "p":
+                player_loc = [x*32, y*32]
+            elif element == "b":
                 bush_locs.append((x*32,y*32))
+            elif element == "v":
+                scientist_loc.append((x*32,y*32))
             elif element == "g":
                 grass_locs.append((x*32,y*32))
             elif element == "x":
@@ -77,7 +84,7 @@ def make_tile_rects(map, entities, non_touchables):
                 #display.blit(entities[element], (x*16 - scroll[0], y * 16 - scroll[1]))
             x += 1
         y += 1
-    return tile_rects, tree_locs, btree_locs, grass_locs, bush_locs
+    return tile_rects, tree_locs, btree_locs, grass_locs, bush_locs, scientist_loc, player_loc
 
 def draw_tiles(tile_rects, display, scroll):
     for tile in tile_rects:
@@ -132,6 +139,9 @@ correct_alloys = pygame.image.load("./Assets/Entities/alloy_imgs.png").convert_a
 right_mine_sprite_sheet = pygame.image.load("./Assets/Sprites/right_mine.png").convert_alpha()
 up_mine_sprite_sheet = pygame.image.load("./Assets/Sprites/up_mine.png").convert_alpha()
 down_mine_sprite_sheet = pygame.image.load("./Assets/Sprites/down_mine.png").convert_alpha()
+scientist_idle_sprite_sheet = pygame.image.load("./Assets/Sprites/scientist_idle.png").convert_alpha()
+scientist_head = pygame.image.load("./Assets/Sprites/head.png").convert_alpha()
+scientist_head.set_colorkey((255,0,0))
 right_shot = []
 sparks = []
 for x in range(4):
@@ -156,13 +166,16 @@ for x in range(4):
 down_mine_animation = []
 for x in range(4):
     down_mine_animation.append(get_image(down_mine_sprite_sheet, x, 64, 67, 2/3, (255,0,0)))
+sceintist_idle_animation = []
+for x in range(4):
+    sceintist_idle_animation.append(get_image(scientist_idle_sprite_sheet, x, 32, 32, 2, (0,0,0)))
 #Quantum
 player_idle_animation = []
 player_run_animation = []
 for x in range(4):
     player_idle_animation.append(get_image(miner_idle_spritesheet, x, 47, 67, 2/3, (255,0,0)))
     player_run_animation.append(get_image(miner_run_spritesheet, x, 47, 67, 2/3, (255,0,0)))
-player = engine.Player(50,50,miner_img.get_width(),miner_img.get_height(), miner_img, player_idle_animation, player_run_animation, right_shot, right_mine_animation, up_mine_animation, down_mine_animation)
+
 #Grass
 grasses = []
 grass_loc = []
@@ -200,7 +213,9 @@ mapping = {"0": "c", "1": "s", "2": "l", "3": "m", "4": "a"}
 #Fonts
 inven_font = pygame.font.Font("./Assets/Fonts/jayce.ttf", 7)
 element_font = pygame.font.Font("./Assets/Fonts/jayce.ttf", 17)
-tile_rects, tree_locs, btree_locs, grass_loc, bush_locs = make_tile_rects(map, entities, non_touchable_entities)
+tile_rects, tree_locs, btree_locs, grass_loc, bush_locs, scientist_loc, player_loc = make_tile_rects(map, entities, non_touchable_entities)
+#Player
+player = engine.Player(player_loc[0],player_loc[1],miner_img.get_width(),miner_img.get_height(), miner_img, player_idle_animation, player_run_animation, right_shot, right_mine_animation, up_mine_animation, down_mine_animation)
 #Fusion
 fusion = [-1, -1]
 fusion_dict = {}
@@ -211,6 +226,8 @@ fusion_animation = False
 fusion_animation_cooldown = 400
 fusion_animation_last_update = 0
 fusion_radius = 5
+#Scientist
+scientist = science.Scientist(scientist_loc[0][0], scientist_loc[0][1], sceintist_idle_animation[0].get_width(), sceintist_idle_animation[1].get_height(), sceintist_idle_animation)
 grasses = []
 current_overlay = -1
 for loc in grass_loc:
@@ -219,8 +236,8 @@ for loc in grass_loc:
         x_pos += 2.5
         grasses.append(g.grass([x_pos, loc[1]+14], 2, 18))
 click = False
-typer = typewriter.TypeWriter(element_font, (255,0,0), 20, 50, 400, 9)
-typer.write(['Hello world', 'I rock to the core you know that right, because i use shaders which uses moderngl and I love computer science'])
+typer = typewriter.TypeWriter(element_font, (255,255,255), 90, 10, 400, 9)
+typer.write(['Hi! My name is minstein', 'I need alloys to save the world, miner', 'As you can only control the environment...', 'by mining the tiles that are free of vegetation', 'Please Help Me', 'Here is my list of alloys'])
 done_typing = False
 display_list = False
 list_rect = pygame.rect.Rect(15, 200, 50, 50)
@@ -230,6 +247,9 @@ made_alloy = [False, -1]
 made_alloy_last_update = 0
 made_alloy_cooldown = 1200
 made_alloy_rect = pygame.rect.Rect(200, 40, 100, 100)
+scientist_talk = False
+colliding_with_scientist = False
+sceintist_speech_done = False
 while run:
     clock.tick(60)
     time = pygame.time.get_ticks()
@@ -260,14 +280,30 @@ while run:
     for loc in btree_locs:
         display.blit(btree_img, (loc[0] - scroll[0] - 79, loc[1] - scroll[1] - 149))
     
-    player.move(time, tile_rects, dig_down, dig_right, dig_left, dig_up, inventory, inven_items, scroll)
+    #Scientist
+    scientist.move(time, tile_rects, player.get_rect())
+    scientist.draw(display, scroll)
+
+    if not scientist_talk:
+        player.move(time, tile_rects, dig_down, dig_right, dig_left, dig_up, inventory, inven_items, scroll)
     player.draw(display, scroll)
 
     #Background Particles
     bg_particle_effect.recursive_call(time, display, scroll, 1)
     #Typing Effect
-    if not done_typing:
-        done_typing = typer.update(time, display)
+    if scientist_talk:
+        if not done_typing:
+            pygame.draw.rect(display, (0,0,0), pygame.rect.Rect(0, 0, 400, 120))
+            display.blit(scientist_head, (0,0))
+            done_typing = typer.update(time, display)
+        else:
+            scientist_talk = False
+            sceintist_speech_done = True
+    
+    #Scientist talk settings
+    if player.get_rect().colliderect(scientist.get_rect()):
+        draw_text("E", element_font, (255,255,255), player.get_rect().x + 14 - scroll[0], player.get_rect().y - 40 - scroll[1], display)
+        colliding_with_scientist = True
 
     #Blitting Items After Blitting The Player
     blit_grass(grasses, display, scroll, player)
@@ -333,13 +369,14 @@ while run:
     if player.rect.y > 1000:
         player.rect.y = -50
 
-    if list_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
-        current_overlay = 5
-        pygame.draw.rect(display, (0,150,0), list_rect, border_radius=9)
-    else:
-        pygame.draw.rect(display, (255,201,14), list_rect, border_radius=9)
-    pygame.draw.rect(display, (0,0,0), list_black_rect, border_radius=4)
-    display.blit(list_img_logo, (20, 205))
+    if sceintist_speech_done:
+        if list_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
+            current_overlay = 5
+            pygame.draw.rect(display, (0,150,0), list_rect, border_radius=9)
+        else:
+            pygame.draw.rect(display, (255,201,14), list_rect, border_radius=9)
+        pygame.draw.rect(display, (0,0,0), list_black_rect, border_radius=4)
+        display.blit(list_img_logo, (20, 205))
 
     #Displaying list
     if display_list:
@@ -412,6 +449,8 @@ while run:
                     display_list = False
                 else:
                     display_list = True
+            if event.key == pygame.K_e:
+                scientist_talk = True
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 if not click:

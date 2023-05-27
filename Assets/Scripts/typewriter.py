@@ -35,6 +35,10 @@ class TypeWriter():
             img = self.font.render(text, True, self.text_col)
             display.blit(img, (self.x, originial_y))
             originial_y += 20
+        
+    def draw_enter(self, x, y, text, display):
+        img = self.font.render(text, True, self.text_col)
+        display.blit(img, (x, y))
     
     
     def update(self, time, display):
@@ -62,6 +66,7 @@ class TypeWriter():
         self.draw_text(self.strings, display)
 
         if self.waiting_to_update:
+            self.draw_enter(350, 80, "Enter", display)
             key = pygame.key.get_pressed()
             if key[pygame.K_RETURN]:
                 self.waiting_to_update = False
