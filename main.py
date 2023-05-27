@@ -146,6 +146,9 @@ up_mine_sprite_sheet = pygame.image.load("./Assets/Sprites/up_mine.png").convert
 down_mine_sprite_sheet = pygame.image.load("./Assets/Sprites/down_mine.png").convert_alpha()
 scientist_idle_sprite_sheet = pygame.image.load("./Assets/Sprites/scientist_idle.png").convert_alpha()
 scientist_head = pygame.image.load("./Assets/Sprites/head.png").convert_alpha()
+background_img = pygame.image.load("./Assets/Entities/background.png").convert_alpha()
+background_img = pygame.transform.scale(background_img, (background_img.get_width()*2, background_img.get_height()*2))
+background_img.set_colorkey((0,0,0))
 scientist_head.set_colorkey((255,0,0))
 right_shot = []
 sparks = []
@@ -215,12 +218,18 @@ inventory = [{"c":0}, {"s":0}, {"l":0}, {"m":0}, {"a":0}] #Example -> {"c" : 1} 
 inven_slot = -1
 inven_items = {"c":[0, element_logo_imgs[1], "Copper"], "s": [1, element_logo_imgs[2], "Tin (SN) "], "l": [2, element_logo_imgs[3], "Aluminium"], "m": [3, element_logo_imgs[4], "Manganese"], "a":[4, element_logo_imgs[5], "Antimony"]}
 mapping = {"0": "c", "1": "s", "2": "l", "3": "m", "4": "a"}
+#Sounds 
+fusion_sound = pygame.mixer.Sound("./Assets/Music/fusion.wav")
+jump_sound = pygame.mixer.Sound("./Assets/Music/jump.wav")
+jump_sound.set_volume(0.1)
+mining_sound = pygame.mixer.Sound("./Assets/Music/mining.wav")
+mining_sound.set_volume(0.1)
 #Fonts
 inven_font = pygame.font.Font("./Assets/Fonts/jayce.ttf", 7)
 element_font = pygame.font.Font("./Assets/Fonts/jayce.ttf", 17)
 tile_rects, tree_locs, btree_locs, grass_loc, bush_locs, scientist_loc, player_loc = make_tile_rects(map, entities, non_touchable_entities)
 #Player
-player = engine.Player(player_loc[0],player_loc[1],miner_img.get_width(),miner_img.get_height(), miner_img, player_idle_animation, player_run_animation, right_shot, right_mine_animation, up_mine_animation, down_mine_animation)
+player = engine.Player(player_loc[0],player_loc[1],miner_img.get_width(),miner_img.get_height(), miner_img, player_idle_animation, player_run_animation, right_shot, right_mine_animation, up_mine_animation, down_mine_animation, mining_sound, jump_sound)
 #Fusion
 fusion = [-1, -1]
 fusion_dict = {}
@@ -259,6 +268,13 @@ sceintist_speech_done = False
 shader_obj = shader.Shader(True, "./Assets/Shader/vertex.vert", "./Assets/Shader/fragment.frag")
 noise_img = pygame.image.load("./Assets/Shader/pnoise.png").convert_alpha()
 start_time = t.time()
+
+pygame.mixer.music.load("./Assets/Music/bg_song.wav")
+pygame.mixer.music.set_volume(0.2)
+pygame.mixer.music.play(-1)
+
+
+
 while run:
     clock.tick(60)
     time = pygame.time.get_ticks()
@@ -277,6 +293,8 @@ while run:
     scroll = true_scroll.copy()
     scroll[0] = int(scroll[0])
     scroll[1] = int(scroll[1])
+
+    display.blit(background_img, (-100 - scroll[0], -100 - scroll[1]))
 
     draw_tiles(tile_rects, display, scroll)
 
@@ -490,6 +508,7 @@ while run:
                         for x in range(50):
                             sparks.append(spark.Spark([fusion_rect.x + 15 ,fusion_rect.y + 15], math.radians(random.randint(0,360)), random.randint(2,5), (random.randint(0,255),random.randint(0,255),random.randint(0,255)), 2, 1))
                         fusion_animation = True
+                        fusion_sound.play()
                         fusion_animation_last_update = time
                         fusion_radius = 0
                     

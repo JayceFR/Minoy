@@ -4,7 +4,7 @@ import math
 import random
 
 class Player():
-    def __init__(self, x ,y, width, height, img, idle_animation, run_animation, right_shot, right_mine_animation, up_mine_animation, down_mine_animation) -> None:
+    def __init__(self, x ,y, width, height, img, idle_animation, run_animation, right_shot, right_mine_animation, up_mine_animation, down_mine_animation, mining_sound, jump_sound) -> None:
         self.rect = pygame.rect.Rect(x, y, width, height)
         self.movement = [0,0]
         self.display_x = 0
@@ -37,6 +37,8 @@ class Player():
         self.up_mine_animation = up_mine_animation
         self.down_mine_animation = down_mine_animation
         self.sparks = []
+        self.mining_sound = mining_sound
+        self.jump_sound = jump_sound
 
     def draw(self, display, scroll):
         self.display_x = self.rect.x
@@ -123,10 +125,12 @@ class Player():
         self.collision_type = self.collision_checker(tiles)
 
         if dig_down:
+            
             self.show_down = True
             self.show_last_update = time
             for tile in self.collision_type["bottom"][1]:
                 if tile.breakable:
+                    self.mining_sound.play()
                     tile.health -= 20
                     for x in range(20):
                         self.sparks.append(spark.Spark([self.rect.x - scroll[0] + 13, tile.get_rect().y - scroll[1]], math.radians(random.randint(180,360)), random.randint(2,4), (120,120,120), 1, 0 ))
@@ -135,10 +139,12 @@ class Player():
                         self.add_to_inventory(inventory, inven_items, tile.special_id)
                     tiles.remove(tile)
         if dig_right:
+            
             self.show_right = True
             self.show_last_update = time
             for tile in self.collision_type["right"][1]:
                 if tile.breakable:
+                    self.mining_sound.play()
                     tile.health -= 20
                     for x in range(20):
                         self.sparks.append(spark.Spark([tile.get_rect().x - scroll[0], tile.get_rect().y - scroll[1]], math.radians(random.randint(90,270)), random.randint(2,4), (120,120,120), 1, 0 ))
@@ -147,10 +153,12 @@ class Player():
                         self.add_to_inventory(inventory, inven_items, tile.special_id)
                     tiles.remove(tile)
         if dig_left:
+            
             self.show_left = True
             self.show_last_update = time
             for tile in self.collision_type["left"][1]:
                 if tile.breakable:
+                    self.mining_sound.play()
                     tile.health -= 20
                     for x in range(20):
                         self.sparks.append(spark.Spark([tile.get_rect().x - scroll[0] + 30, tile.get_rect().y - scroll[1]], math.radians(random.randint(-90,90)), random.randint(2,4), (120,120,120), 1, 0 ))
@@ -164,6 +172,7 @@ class Player():
             for tile in self.collision_type["top"][1]:
                 if tile.breakable:
                     tile.health -= 20
+                    self.mining_sound.play()
                     for x in range(20):
                         self.sparks.append(spark.Spark([self.rect.x - scroll[0] + 13, self.rect.y - scroll[1]], math.radians(random.randint(-180,0)), random.randint(2,4), (120,120,120), 1, 0 ))
                 if tile.health <= 0:
@@ -181,6 +190,7 @@ class Player():
                 if time - self.jump_last_update > self.jump_cooldown:
                     #self.music.play()
                     self.jump = True
+                    self.jump_sound.play()
                     self.jump_last_update = time
         
         if time - self.frame_last_update > self.frame_cooldown:
