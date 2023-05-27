@@ -1,7 +1,3 @@
-#TODO -> Attack animations and sparks when hit
-#TODO -> Level design
-#TODO -> Shaders
-
 import pygame
 import random
 import math
