@@ -5,10 +5,12 @@
 import pygame
 import random
 import math
+import time as t
 import Assets.Scripts.framework as engine
 import Assets.Scripts.bg_particles as bg_particles
 import Assets.Scripts.grass as g
 import Assets.Scripts.sparks as spark
+import Assets.Scripts.typewriter as typewriter
 pygame.init()
 screen_w = 800
 screen_h = 500
@@ -34,6 +36,22 @@ def blit_grass(grasses, display, scroll, player):
 def draw_text(text, font, text_col, x, y, display):
     img = font.render(text, True, text_col)
     display.blit(img, (x, y))
+
+def write_line(text, font, text_col, x, y, width, height, font_size, display):
+    start_x = x
+    final_pos = x + width
+    space = 0
+    letters = []
+    for letter in text:
+        letters.append(letter)
+    for pos,  letter in enumerate(text):
+        if letter == " ":
+            space = pos
+        draw_text(letter, font, text_col, x, y, display)
+        x += font_size
+        if x >= final_pos:
+            y += 40
+            x = start_x
 
 
 def make_tile_rects(map, entities, non_touchables):
@@ -187,7 +205,9 @@ for loc in grass_loc:
         x_pos += 2.5
         grasses.append(g.grass([x_pos, loc[1]+14], 2, 18))
 click = False
-
+typer = typewriter.TypeWriter(element_font, (255,0,0), 20, 50, 400, 9)
+typer.write(['Hello world', 'I rock to the core you know that right, because i use shaders which uses moderngl and I love computer science'])
+done_typing = False
 while run:
     clock.tick(60)
     time = pygame.time.get_ticks()
@@ -222,6 +242,9 @@ while run:
 
     #Background Particles
     bg_particle_effect.recursive_call(time, display, scroll, 1)
+    #Typing Effect
+    if not done_typing:
+        done_typing = typer.update(time, display)
 
     #Blitting Items After Blitting The Player
     blit_grass(grasses, display, scroll, player)
@@ -289,6 +312,7 @@ while run:
                     dig_last_update = time
             if event.key == pygame.K_SPACE:
                 print(inventory, fusion_dict)
+                write_line("Jayce rocks to the core", element_font, (255,0,0), 50, 100, 400, 250, 17, display)
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 if not click:
