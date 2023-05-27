@@ -48,10 +48,10 @@ class Particles():
             self.alive = False
 
     def draw(self, display, scroll):
-        pygame.draw.circle(display, (155, 50, 50), (self.x - scroll[0], self.y - scroll[1]), self.radius)
-        self.radius *= 2
+        pygame.draw.circle(display, (186, 49, 167), (self.x - scroll[0], self.y - scroll[1]), self.radius)
+        self.radius *= 8
         display.blit(self.circle_surf(), (int(self.x- self.radius) - scroll[0], int(self.y - self.radius) - scroll[1]), special_flags=BLEND_RGBA_ADD)
-        self.radius /= 2
+        self.radius /= 8
 
     def circle_surf(self):
         surf = pygame.Surface((self.radius * 4, self.radius * 4))

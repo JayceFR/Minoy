@@ -150,6 +150,19 @@ background_img = pygame.image.load("./Assets/Entities/background.png").convert_a
 background_img = pygame.transform.scale(background_img, (background_img.get_width()*2, background_img.get_height()*2))
 background_img.set_colorkey((0,0,0))
 scientist_head.set_colorkey((255,0,0))
+game_over_screen = pygame.image.load("./Assets/Entities/end_screen.png").convert_alpha()
+wasd_img = pygame.image.load("./Assets/Entities/wasd.png").convert_alpha()
+wasd_img.set_colorkey((255,255,255))
+showel_img = pygame.image.load("./Assets/entities/showel.png").convert_alpha()
+showel_img.set_colorkey((0,0,0))
+showel_display_img = showel_img.copy()
+showel_display_img = pygame.transform.flip(showel_display_img, True, False)
+showel_display_img.set_colorkey((0,0,0))
+arrow_img = pygame.image.load("./Assets/Entities/arrow.png").convert_alpha()
+arrow_img.set_colorkey((255,255,255))
+down = pygame.image.load("./Assets/Entities/down.png").convert_alpha()
+down = pygame.transform.scale(down, (down.get_width()*2, down.get_height()*2))
+down.set_colorkey((0,0,0))
 right_shot = []
 sparks = []
 for x in range(4):
@@ -268,11 +281,20 @@ sceintist_speech_done = False
 shader_obj = shader.Shader(True, "./Assets/Shader/vertex.vert", "./Assets/Shader/fragment.frag")
 noise_img = pygame.image.load("./Assets/Shader/pnoise.png").convert_alpha()
 start_time = t.time()
+game_ended = False
+collected_mineral = False
+
+down_cooldown = 5000
+down_last_update = 0
 
 pygame.mixer.music.load("./Assets/Music/bg_song.wav")
 pygame.mixer.music.set_volume(0.2)
 pygame.mixer.music.play(-1)
 
+tutorial_cooldown = 5000
+tutorial_last_update = 0
+
+pygame.mouse.set_visible(False)
 
 
 while run:
@@ -282,6 +304,13 @@ while run:
     ui_display.fill((0,0,0,0))
 
     colliding_with_scientist = False
+
+    if not collected_mineral:
+        for x in inventory:
+            for key, value in x.items():
+                if value != 0:
+                    collected_mineral = True
+                    down_last_update = time
 
     current_overlay = -1
     mouse_pos = list(pygame.mouse.get_pos())
@@ -297,6 +326,12 @@ while run:
     display.blit(background_img, (-100 - scroll[0], -100 - scroll[1]))
 
     draw_tiles(tile_rects, display, scroll)
+
+    #Checking if game has ended
+    game_ended = True
+    for alloy in levels:
+        if alloy[2] == False:
+            game_ended = False
 
     #Grass movement
     if time - grass_last_update > grass_cooldown:
@@ -314,8 +349,9 @@ while run:
     scientist.move(time, tile_rects, player.get_rect())
     scientist.draw(display, scroll)
 
-    if not scientist_talk:
-        player.move(time, tile_rects, dig_down, dig_right, dig_left, dig_up, inventory, inven_items, scroll)
+    if not game_ended:
+        if not scientist_talk:
+            player.move(time, tile_rects, dig_down, dig_right, dig_left, dig_up, inventory, inven_items, scroll)
     player.draw(display, scroll)
 
     #Background Particles
@@ -334,119 +370,132 @@ while run:
     if player.get_rect().colliderect(scientist.get_rect()):
         draw_text("E", element_font, (255,255,255), player.get_rect().x + 14 - scroll[0], player.get_rect().y - 40 - scroll[1], ui_display)
         colliding_with_scientist = True
+    if not game_ended:
+        #Blitting Items After Blitting The Player
+        blit_grass(grasses, display, scroll, player)
+        #Bush drawing
+        for loc in bush_locs:
+            display.blit(bush_img, (loc[0] - scroll[0] - 32, loc[1] - scroll[1]))
 
-    #Blitting Items After Blitting The Player
-    blit_grass(grasses, display, scroll, player)
-    #Bush drawing
-    for loc in bush_locs:
-        display.blit(bush_img, (loc[0] - scroll[0] - 32, loc[1] - scroll[1]))
-
-    #Inventory management
-    left = 150
-    pygame.draw.line(ui_display, (255,255,255), (left - 10, 250), (left, 220))
-    pygame.draw.line(ui_display, (255,255,255), (left, 220), (272, 220))
-    pygame.draw.line(ui_display, (255,255,255), (272,220), (282, 250))
-    for x in range(len(inventory)):
-        if pygame.rect.Rect(left, 225, 20, 20).collidepoint(mouse_pos[0], mouse_pos[1]):
-            pygame.draw.rect(ui_display, (0,150,0), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)    
-        else:
-            pygame.draw.rect(ui_display, (46,94,100), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)
-        pygame.draw.rect(ui_display, (0,0,0), pygame.rect.Rect(left + 2, 225 + 2.5, 20 - 2.5, 20 - 2.5), border_radius=4)
-        if inventory[x][mapping[str(x)]] > 0:
-            ui_display.blit(inven_items[mapping[str(x)]][1], (left + 2.2 , 225 + 2.2))
-            draw_text(str(inventory[x][mapping[str(x)]]), inven_font, (255,255,255), left + 9, 242, ui_display)
+        #Inventory management
+        left = 150
+        pygame.draw.line(ui_display, (255,255,255), (left - 10, 250), (left, 220))
+        pygame.draw.line(ui_display, (255,255,255), (left, 220), (272, 220))
+        pygame.draw.line(ui_display, (255,255,255), (272,220), (282, 250))
+        for x in range(len(inventory)):
             if pygame.rect.Rect(left, 225, 20, 20).collidepoint(mouse_pos[0], mouse_pos[1]):
-                current_overlay = x
-                draw_text(inven_items[mapping[str(x)]][2], element_font, (255,255,255), left - 15, 210, ui_display)
-        left += 25
+                pygame.draw.rect(ui_display, (0,150,0), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)    
+            else:
+                pygame.draw.rect(ui_display, (46,94,100), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)
+            pygame.draw.rect(ui_display, (0,0,0), pygame.rect.Rect(left + 2, 225 + 2.5, 20 - 2.5, 20 - 2.5), border_radius=4)
+            if inventory[x][mapping[str(x)]] > 0:
+                ui_display.blit(inven_items[mapping[str(x)]][1], (left + 2.2 , 225 + 2.2))
+                draw_text(str(inventory[x][mapping[str(x)]]), inven_font, (255,255,255), left + 9, 242, ui_display)
+                if pygame.rect.Rect(left, 225, 20, 20).collidepoint(mouse_pos[0], mouse_pos[1]):
+                    current_overlay = x
+                    draw_text(inven_items[mapping[str(x)]][2], element_font, (255,255,255), left - 15, 210, ui_display)
+            left += 25
 
-    #Drawing fusion rect
-    if around_fusion_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
-        pygame.draw.rect(ui_display, (0,150,0), around_fusion_rect, border_radius=9)
-    else:
-        pygame.draw.rect(ui_display, (255,201,14), around_fusion_rect, border_radius=9)
-    pygame.draw.rect(ui_display, (0,0,0), fusion_rect, border_radius=7)
-    if len(fusion_dict) == 1:
-        for key in fusion_dict.keys():
-            ui_display.blit(entities[key], (fusion_rect.x + 4, fusion_rect.y + 5))
-    elif len(fusion_dict) > 1:
-        ui_display.blit(fusion_display_tile, (fusion_rect.x + 4, fusion_rect.y + 5))
-
-    if click:
-        ui_display.blit(inven_items[mapping[str(fusion[0])]][1], mouse_pos)
-    
-    for s in sparks:
-        s.move(1)
-        s.draw(display)
-    
-    if fusion_animation:
-        if time - fusion_animation_last_update > fusion_animation_cooldown//2:
-            fusion_rect.x -= 7
-            fusion_rect.y += 5
+        #Drawing fusion rect
+        if around_fusion_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
+            pygame.draw.rect(ui_display, (0,150,0), around_fusion_rect, border_radius=9)
         else:
-            fusion_rect.x += 2.5
-            fusion_rect.y -= 5
-        if time - fusion_animation_last_update > fusion_animation_cooldown:
-            fusion_animation = False
-            fusion_rect.width = 40
-            fusion_rect.height = 40
-            fusion_rect.x = 345
-            fusion_rect.y = 205
-        pygame.draw.circle(ui_display, (255,255,255), (370, 230), fusion_radius, 9)
-        fusion_radius += 20
-    
-    #Cycling the map
-    if player.rect.y > 1000:
-        player.rect.y = -50
+            pygame.draw.rect(ui_display, (255,201,14), around_fusion_rect, border_radius=9)
+        pygame.draw.rect(ui_display, (0,0,0), fusion_rect, border_radius=7)
+        if len(fusion_dict) == 1:
+            for key in fusion_dict.keys():
+                ui_display.blit(entities[key], (fusion_rect.x + 4, fusion_rect.y + 5))
+        elif len(fusion_dict) > 1:
+            ui_display.blit(fusion_display_tile, (fusion_rect.x + 4, fusion_rect.y + 5))
 
-    if sceintist_speech_done:
-        if list_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
-            current_overlay = 5
-            pygame.draw.rect(ui_display, (0,150,0), list_rect, border_radius=9)
-        else:
-            pygame.draw.rect(ui_display, (255,201,14), list_rect, border_radius=9)
-        pygame.draw.rect(ui_display, (0,0,0), list_black_rect, border_radius=4)
-        ui_display.blit(list_img_logo, (20, 205))
+        if click:
+            ui_display.blit(inven_items[mapping[str(fusion[0])]][1], mouse_pos)
+        
+        for s in sparks:
+            s.move(1)
+            s.draw(display)
+        
+        if fusion_animation:
+            if time - fusion_animation_last_update > fusion_animation_cooldown//2:
+                fusion_rect.x -= 7
+                fusion_rect.y += 5
+            else:
+                fusion_rect.x += 2.5
+                fusion_rect.y -= 5
+            if time - fusion_animation_last_update > fusion_animation_cooldown:
+                fusion_animation = False
+                fusion_rect.width = 40
+                fusion_rect.height = 40
+                fusion_rect.x = 345
+                fusion_rect.y = 205
+            pygame.draw.circle(ui_display, (255,255,255), (370, 230), fusion_radius, 9)
+            fusion_radius += 20
+        
+        #Cycling the map
+        if player.rect.y > 1000:
+            player.rect.y = -50
+
+        if sceintist_speech_done:
+            if list_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
+                current_overlay = 5
+                pygame.draw.rect(ui_display, (0,150,0), list_rect, border_radius=9)
+            else:
+                pygame.draw.rect(ui_display, (255,201,14), list_rect, border_radius=9)
+            pygame.draw.rect(ui_display, (0,0,0), list_black_rect, border_radius=4)
+            ui_display.blit(list_img_logo, (20, 205))
 
     #Displaying list
-    if display_list:
-        ui_display.blit(list_img, (100, 50))
-        y = 0
+    if not game_ended:
+        if display_list:
+            ui_display.blit(list_img, (100, 50))
+            y = 0
+            for pos, alloy in enumerate(levels):
+                y += 40
+                if alloy[2] == True:
+                    ui_display.blit(tick_img, (120, 50 + y))
+    
+        #Checking if required alloy is fused
         for pos, alloy in enumerate(levels):
-            y += 40
-            if alloy[2] == True:
-                ui_display.blit(tick_img, (120, 50 + y))
-    
-    #Checking if required alloy is fused
-    for pos, alloy in enumerate(levels):
-        equal = True
-        if alloy[2] == False:
-            if len(alloy[0]) == len(fusion_dict):
-                for key, value in alloy[0].items():
-                    if fusion_dict.get(key) != value:
-                        equal = False
-                if equal:
-                    fusion_dict = {}
-                    alloy[2] = True
-                    made_alloy[0] = True
-                    made_alloy[1] = pos
-                    made_alloy_last_update = time
-    
-    if made_alloy[0] == True:
-        flip = correct_alloy_imgs[made_alloy[1]].copy()
-        flip = pygame.transform.scale(flip, (made_alloy_rect.width, made_alloy_rect.height))
-        ui_display.blit(flip, made_alloy_rect)
-        if time - made_alloy_last_update > made_alloy_cooldown:
-            made_alloy[0] = False
-            made_alloy[1] = -1
-            made_alloy_rect = pygame.rect.Rect(200, 40, 100, 100)
-        made_alloy_rect.x -= 5
-        made_alloy_rect.y += 5
-        if made_alloy_rect.width > 5 and made_alloy_rect.height > 5:
-            made_alloy_rect.width -= 2.5
-            made_alloy_rect.height -= 2.5
-    
+            equal = True
+            if alloy[2] == False:
+                if len(alloy[0]) == len(fusion_dict):
+                    for key, value in alloy[0].items():
+                        if fusion_dict.get(key) != value:
+                            equal = False
+                    if equal:
+                        fusion_dict = {}
+                        alloy[2] = True
+                        made_alloy[0] = True
+                        made_alloy[1] = pos
+                        made_alloy_last_update = time
         
+        if made_alloy[0] == True:
+            flip = correct_alloy_imgs[made_alloy[1]].copy()
+            flip = pygame.transform.scale(flip, (made_alloy_rect.width, made_alloy_rect.height))
+            ui_display.blit(flip, made_alloy_rect)
+            if time - made_alloy_last_update > made_alloy_cooldown:
+                made_alloy[0] = False
+                made_alloy[1] = -1
+                made_alloy_rect = pygame.rect.Rect(200, 40, 100, 100)
+            made_alloy_rect.x -= 5
+            made_alloy_rect.y += 5
+            if made_alloy_rect.width > 5 and made_alloy_rect.height > 5:
+                made_alloy_rect.width -= 2.5
+                made_alloy_rect.height -= 2.5
+    
+    if game_ended:
+        display.blit(game_over_screen, (0,0))
+    
+    if collected_mineral:
+        if time - down_last_update < down_cooldown:
+            draw_text("Drag To Fuse", element_font, (255,255,255), 300, 150, ui_display)
+            ui_display.blit(down, (350, 170 + math.sin(time) * 2))
+
+    if time - tutorial_last_update < tutorial_cooldown:
+        ui_display.blit(wasd_img, (player.get_rect().x - scroll[0] - 20 , player.get_rect().y - scroll[1] - 30))
+        ui_display.blit(arrow_img, (player.get_rect().x - scroll[0] + 15, player.get_rect().y - scroll[1] - 30 ))
+        ui_display.blit(showel_display_img, (player.get_rect().x - scroll[0] + 35, player.get_rect().y - scroll[1] - 30 ) )
+    ui_display.blit(showel_img, (mouse_pos[0], mouse_pos[1]))
 
     dig_down = False
     dig_right = False
@@ -472,8 +521,6 @@ while run:
                 if time - dig_last_update > dig_cooldown:
                     dig_up = True
                     dig_last_update = time
-            if event.key == pygame.K_SPACE:
-                print(inventory, fusion_dict)
             if event.key == pygame.K_i:
                 if display_list:
                     display_list = False
