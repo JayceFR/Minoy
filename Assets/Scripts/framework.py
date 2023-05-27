@@ -1,7 +1,10 @@
 import pygame
+import Assets.Scripts.sparks as spark
+import math
+import random
 
 class Player():
-    def __init__(self, x ,y, width, height, img, idle_animation, run_animation, right_shot, right_mine_animation, up_mine_animation) -> None:
+    def __init__(self, x ,y, width, height, img, idle_animation, run_animation, right_shot, right_mine_animation, up_mine_animation, down_mine_animation) -> None:
         self.rect = pygame.rect.Rect(x, y, width, height)
         self.movement = [0,0]
         self.display_x = 0
@@ -23,6 +26,7 @@ class Player():
         self.show_right = False
         self.show_left = False
         self.show_up = False
+        self.show_down = False
         self.right_shot = right_shot
         self.jump = False
         self.jump_last_update = 0
@@ -31,6 +35,8 @@ class Player():
         self.air_timer = 0
         self.right_mine_animation = right_mine_animation
         self.up_mine_animation = up_mine_animation
+        self.down_mine_animation = down_mine_animation
+        self.sparks = []
 
     def draw(self, display, scroll):
         self.display_x = self.rect.x
@@ -44,6 +50,8 @@ class Player():
             flip = self.right_mine_animation[self.frame].copy()
             flip = pygame.transform.flip(flip, True, False)
             display.blit(flip, self.rect)
+        elif self.show_down:
+            display.blit(self.down_mine_animation[self.frame], (self.rect.x, self.rect.y))
         elif self.show_up:
             display.blit(self.up_mine_animation[self.frame], (self.rect.x, self.rect.y - 12))
         else:
@@ -63,8 +71,12 @@ class Player():
         
         self.rect.x = self.display_x
         self.rect.y = self.display_y
+
+        for s in self.sparks:
+            s.move(1)
+            s.draw(display)
     
-    def move(self, time,  tiles, dig_down, dig_right, dig_left, dig_up, inventory, inven_items):
+    def move(self, time,  tiles, dig_down, dig_right, dig_left, dig_up, inventory, inven_items, scroll):
         self.movement = [0, 0]
 
         if self.moving_right:
@@ -100,6 +112,10 @@ class Player():
             if time - self.show_last_update > self.show_cooldown:
                 self.show_last_update = time
                 self.show_up = False
+        elif self.show_down:
+            if time - self.show_last_update > self.show_cooldown:
+                self.show_last_update = time
+                self.show_down = False
         
         if not self.jump:
             self.movement[1] += 10
@@ -107,9 +123,13 @@ class Player():
         self.collision_type = self.collision_checker(tiles)
 
         if dig_down:
+            self.show_down = True
+            self.show_last_update = time
             for tile in self.collision_type["bottom"][1]:
                 if tile.breakable:
                     tile.health -= 20
+                    for x in range(20):
+                        self.sparks.append(spark.Spark([self.rect.x - scroll[0] + 13, tile.get_rect().y - scroll[1]], math.radians(random.randint(180,360)), random.randint(2,4), (120,120,120), 1, 0 ))
                 if tile.health <= 0:
                     if tile.special_id != "n":
                         self.add_to_inventory(inventory, inven_items, tile.special_id)
@@ -120,6 +140,8 @@ class Player():
             for tile in self.collision_type["right"][1]:
                 if tile.breakable:
                     tile.health -= 20
+                    for x in range(20):
+                        self.sparks.append(spark.Spark([tile.get_rect().x - scroll[0], tile.get_rect().y - scroll[1]], math.radians(random.randint(90,270)), random.randint(2,4), (120,120,120), 1, 0 ))
                 if tile.health <= 0:
                     if tile.special_id != "n":
                         self.add_to_inventory(inventory, inven_items, tile.special_id)
@@ -130,6 +152,8 @@ class Player():
             for tile in self.collision_type["left"][1]:
                 if tile.breakable:
                     tile.health -= 20
+                    for x in range(20):
+                        self.sparks.append(spark.Spark([tile.get_rect().x - scroll[0] + 30, tile.get_rect().y - scroll[1]], math.radians(random.randint(-90,90)), random.randint(2,4), (120,120,120), 1, 0 ))
                 if tile.health <= 0:
                     if tile.special_id != "n":
                         self.add_to_inventory(inventory, inven_items, tile.special_id)
@@ -140,6 +164,8 @@ class Player():
             for tile in self.collision_type["top"][1]:
                 if tile.breakable:
                     tile.health -= 20
+                    for x in range(20):
+                        self.sparks.append(spark.Spark([self.rect.x - scroll[0] + 13, self.rect.y - scroll[1]], math.radians(random.randint(-180,0)), random.randint(2,4), (120,120,120), 1, 0 ))
                 if tile.health <= 0:
                     if tile.special_id != "n":
                         self.add_to_inventory(inventory, inven_items, tile.special_id)
@@ -162,6 +188,7 @@ class Player():
             if self.frame >= 4:
                 self.frame = 0
             self.frame_last_update = time
+        
     
     def collision_test(self, tiles):
         hitlist = []

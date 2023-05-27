@@ -1,4 +1,4 @@
-#TODO -> Attack animations
+#TODO -> Attack animations and sparks when hit
 #TODO -> Level design
 #TODO -> Shaders
 
@@ -131,6 +131,7 @@ alloy_sprite_sheet = pygame.image.load("./Assets/Entities/fake_minerals.png").co
 correct_alloys = pygame.image.load("./Assets/Entities/alloy_imgs.png").convert_alpha()
 right_mine_sprite_sheet = pygame.image.load("./Assets/Sprites/right_mine.png").convert_alpha()
 up_mine_sprite_sheet = pygame.image.load("./Assets/Sprites/up_mine.png").convert_alpha()
+down_mine_sprite_sheet = pygame.image.load("./Assets/Sprites/down_mine.png").convert_alpha()
 right_shot = []
 sparks = []
 for x in range(4):
@@ -152,13 +153,16 @@ for x in range(4):
 up_mine_animation = []
 for x in range(4):
     up_mine_animation.append(get_image(up_mine_sprite_sheet, x, 62, 81, 2/3, (255,0,0)))
+down_mine_animation = []
+for x in range(4):
+    down_mine_animation.append(get_image(down_mine_sprite_sheet, x, 64, 67, 2/3, (255,0,0)))
 #Quantum
 player_idle_animation = []
 player_run_animation = []
 for x in range(4):
     player_idle_animation.append(get_image(miner_idle_spritesheet, x, 47, 67, 2/3, (255,0,0)))
     player_run_animation.append(get_image(miner_run_spritesheet, x, 47, 67, 2/3, (255,0,0)))
-player = engine.Player(50,50,miner_img.get_width(),miner_img.get_height(), miner_img, player_idle_animation, player_run_animation, right_shot, right_mine_animation, up_mine_animation)
+player = engine.Player(50,50,miner_img.get_width(),miner_img.get_height(), miner_img, player_idle_animation, player_run_animation, right_shot, right_mine_animation, up_mine_animation, down_mine_animation)
 #Grass
 grasses = []
 grass_loc = []
@@ -256,7 +260,7 @@ while run:
     for loc in btree_locs:
         display.blit(btree_img, (loc[0] - scroll[0] - 79, loc[1] - scroll[1] - 149))
     
-    player.move(time, tile_rects, dig_down, dig_right, dig_left, dig_up, inventory, inven_items)
+    player.move(time, tile_rects, dig_down, dig_right, dig_left, dig_up, inventory, inven_items, scroll)
     player.draw(display, scroll)
 
     #Background Particles
