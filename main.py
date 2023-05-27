@@ -188,7 +188,7 @@ clock = pygame.time.Clock()
 
 #Reading the map
 map = []
-f = open("./Assets/Maps/map.txt", "r")
+f = open("./Assets/Maps/world.txt", "r")
 data = f.read()
 f.close()
 data = data.split("\n")
@@ -237,7 +237,7 @@ for loc in grass_loc:
         grasses.append(g.grass([x_pos, loc[1]+14], 2, 18))
 click = False
 typer = typewriter.TypeWriter(element_font, (255,255,255), 90, 10, 400, 9)
-typer.write(['Hi! My name is minstein', 'I need alloys to save the world, miner', 'As you can only control the environment...', 'by mining the tiles that are free of vegetation', 'Please Help Me', 'Here is my list of alloys'])
+typer.write(['Hi! My name is minstein', 'I need alloys to save the world, miner', 'As you can only control the environment...', 'by mining the tiles that are free of vegetation', 'Please Help Me', 'Mine the indiviual elements...', 'And Fuse Them!', 'Here is my list of alloys' ])
 done_typing = False
 display_list = False
 list_rect = pygame.rect.Rect(15, 200, 50, 50)
@@ -254,6 +254,8 @@ while run:
     clock.tick(60)
     time = pygame.time.get_ticks()
     display.fill((0,0,0))
+
+    colliding_with_scientist = False
 
     current_overlay = -1
     mouse_pos = list(pygame.mouse.get_pos())
@@ -450,7 +452,8 @@ while run:
                 else:
                     display_list = True
             if event.key == pygame.K_e:
-                scientist_talk = True
+                if colliding_with_scientist:
+                    scientist_talk = True
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 if not click:
