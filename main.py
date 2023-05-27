@@ -181,7 +181,8 @@ tile_rects, tree_locs, btree_locs, grass_loc, bush_locs = make_tile_rects(map, e
 #Fusion
 fusion = [-1, -1]
 fusion_dict = {}
-fusion_rect = pygame.rect.Rect(350,210,40,40)
+fusion_rect = pygame.rect.Rect(345,205,40,40)
+around_fusion_rect = pygame.rect.Rect(340, 200, 50, 50)
 fusion_display_tile = alloy_imgs[0]
 fusion_animation = False
 fusion_animation_cooldown = 400
@@ -207,8 +208,8 @@ while run:
     mouse_pos[0] //= 2
     mouse_pos[1] //= 2
 
-    true_scroll[0] += (player.get_rect().x - true_scroll[0] - 202) / 5
-    true_scroll[1] += (player.get_rect().y - true_scroll[1] - 132) / 5
+    true_scroll[0] += (player.get_rect().x - true_scroll[0] - 202) 
+    true_scroll[1] += (player.get_rect().y - true_scroll[1] - 132) 
     scroll = true_scroll.copy()
     scroll[0] = int(scroll[0])
     scroll[1] = int(scroll[1])
@@ -262,6 +263,7 @@ while run:
         left += 25
 
     #Drawing fusion rect
+    pygame.draw.rect(display, (255,201,14), around_fusion_rect, border_radius=9)
     pygame.draw.rect(display, (0,0,0), fusion_rect, border_radius=7)
     if len(fusion_dict) == 1:
         for key in fusion_dict.keys():
@@ -278,23 +280,23 @@ while run:
     
     if fusion_animation:
         if time - fusion_animation_last_update > fusion_animation_cooldown//2:
-            fusion_rect.x -= 2.5
+            fusion_rect.x -= 7
             fusion_rect.y += 5
-            fusion_rect.width -= 5
-            fusion_rect.height -= 5
         else:
-            fusion_rect.width += 5
             fusion_rect.x += 2.5
             fusion_rect.y -= 5
-            fusion_rect.height += 5
         if time - fusion_animation_last_update > fusion_animation_cooldown:
             fusion_animation = False
             fusion_rect.width = 40
             fusion_rect.height = 40
-            fusion_rect.x = 350
-            fusion_rect.y = 210
+            fusion_rect.x = 345
+            fusion_rect.y = 205
         pygame.draw.circle(display, (255,255,255), (370, 230), fusion_radius, 9)
         fusion_radius += 20
+    
+    #Cycling the map
+    if player.rect.y > 1000:
+        player.rect.y = -50
 
 
     dig_down = False
