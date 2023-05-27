@@ -37,21 +37,6 @@ def draw_text(text, font, text_col, x, y, display):
     img = font.render(text, True, text_col)
     display.blit(img, (x, y))
 
-def write_line(text, font, text_col, x, y, width, height, font_size, display):
-    start_x = x
-    final_pos = x + width
-    space = 0
-    letters = []
-    for letter in text:
-        letters.append(letter)
-    for pos,  letter in enumerate(text):
-        if letter == " ":
-            space = pos
-        draw_text(letter, font, text_col, x, y, display)
-        x += font_size
-        if x >= final_pos:
-            y += 40
-            x = start_x
 
 
 def make_tile_rects(map, entities, non_touchables):
@@ -198,7 +183,12 @@ fusion = [-1, -1]
 fusion_dict = {}
 fusion_rect = pygame.rect.Rect(350,210,40,40)
 fusion_display_tile = alloy_imgs[0]
+fusion_animation = False
+fusion_animation_cooldown = 400
+fusion_animation_last_update = 0
+fusion_radius = 5
 grasses = []
+current_overlay = -1
 for loc in grass_loc:
     x_pos = loc[0]
     while x_pos < loc[0] + 32:
@@ -285,6 +275,27 @@ while run:
     for s in sparks:
         s.move(1)
         s.draw(display)
+    
+    if fusion_animation:
+        if time - fusion_animation_last_update > fusion_animation_cooldown//2:
+            fusion_rect.x -= 2.5
+            fusion_rect.y += 5
+            fusion_rect.width -= 5
+            fusion_rect.height -= 5
+        else:
+            fusion_rect.width += 5
+            fusion_rect.x += 2.5
+            fusion_rect.y -= 5
+            fusion_rect.height += 5
+        if time - fusion_animation_last_update > fusion_animation_cooldown:
+            fusion_animation = False
+            fusion_rect.width = 40
+            fusion_rect.height = 40
+            fusion_rect.x = 350
+            fusion_rect.y = 210
+        pygame.draw.circle(display, (255,255,255), (370, 230), fusion_radius, 9)
+        fusion_radius += 20
+
 
     dig_down = False
     dig_right = False
@@ -312,7 +323,6 @@ while run:
                     dig_last_update = time
             if event.key == pygame.K_SPACE:
                 print(inventory, fusion_dict)
-                write_line("Jayce rocks to the core", element_font, (255,0,0), 50, 100, 400, 250, 17, display)
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 if not click:
@@ -332,6 +342,9 @@ while run:
                         fusion_display_tile = alloy_imgs[random.randint(0, len(alloy_imgs)-1)]
                         for x in range(50):
                             sparks.append(spark.Spark([fusion_rect.x + 15 ,fusion_rect.y + 15], math.radians(random.randint(0,360)), random.randint(2,5), (random.randint(0,255),random.randint(0,255),random.randint(0,255)), 2, 1))
+                    fusion_animation = True
+                    fusion_animation_last_update = time
+                    fusion_radius = 0
                     click = False             
     surf = pygame.transform.scale(display, (screen_w, screen_h))
     screen.blit(surf, (0,0))
