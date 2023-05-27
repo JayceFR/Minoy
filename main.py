@@ -12,13 +12,18 @@ import Assets.Scripts.grass as g
 import Assets.Scripts.sparks as spark
 import Assets.Scripts.typewriter as typewriter
 import Assets.Scripts.scientist as science
+import Assets.Scripts.shader as shader
 pygame.init()
+from pygame.locals import *
 screen_w = 800
 screen_h = 500
 
-screen = pygame.display.set_mode((screen_w,screen_h))
-pygame.display.set_caption("Minoy")
+window = pygame.display.set_mode((screen_w, screen_h), pygame.OPENGL | pygame.DOUBLEBUF)
+screen = pygame.Surface((screen_w,screen_h))
 display = pygame.Surface((screen_w//2, screen_h//2))
+ui_display = pygame.Surface((screen_w//2, screen_h//2), pygame.SRCALPHA)
+pygame.display.set_caption("Minoy")
+
 
 #Getting image from spirtesheet
 def get_image(sheet, frame, width, height, scale, colorkey):
@@ -250,10 +255,15 @@ made_alloy_rect = pygame.rect.Rect(200, 40, 100, 100)
 scientist_talk = False
 colliding_with_scientist = False
 sceintist_speech_done = False
+#Shader stuff
+shader_obj = shader.Shader(True, "./Assets/Shader/vertex.vert", "./Assets/Shader/fragment.frag")
+noise_img = pygame.image.load("./Assets/Shader/pnoise.png").convert_alpha()
+start_time = t.time()
 while run:
     clock.tick(60)
     time = pygame.time.get_ticks()
     display.fill((0,0,0))
+    ui_display.fill((0,0,0,0))
 
     colliding_with_scientist = False
 
@@ -295,16 +305,16 @@ while run:
     #Typing Effect
     if scientist_talk:
         if not done_typing:
-            pygame.draw.rect(display, (0,0,0), pygame.rect.Rect(0, 0, 400, 120))
-            display.blit(scientist_head, (0,0))
-            done_typing = typer.update(time, display)
+            pygame.draw.rect(ui_display, (0,0,0), pygame.rect.Rect(0, 0, 400, 120))
+            ui_display.blit(scientist_head, (0,0))
+            done_typing = typer.update(time, ui_display)
         else:
             scientist_talk = False
             sceintist_speech_done = True
     
     #Scientist talk settings
     if player.get_rect().colliderect(scientist.get_rect()):
-        draw_text("E", element_font, (255,255,255), player.get_rect().x + 14 - scroll[0], player.get_rect().y - 40 - scroll[1], display)
+        draw_text("E", element_font, (255,255,255), player.get_rect().x + 14 - scroll[0], player.get_rect().y - 40 - scroll[1], ui_display)
         colliding_with_scientist = True
 
     #Blitting Items After Blitting The Player
@@ -315,37 +325,37 @@ while run:
 
     #Inventory management
     left = 150
-    pygame.draw.line(display, (255,255,255), (left - 10, 250), (left, 220))
-    pygame.draw.line(display, (255,255,255), (left, 220), (272, 220))
-    pygame.draw.line(display, (255,255,255), (272,220), (282, 250))
+    pygame.draw.line(ui_display, (255,255,255), (left - 10, 250), (left, 220))
+    pygame.draw.line(ui_display, (255,255,255), (left, 220), (272, 220))
+    pygame.draw.line(ui_display, (255,255,255), (272,220), (282, 250))
     for x in range(len(inventory)):
         if pygame.rect.Rect(left, 225, 20, 20).collidepoint(mouse_pos[0], mouse_pos[1]):
-            pygame.draw.rect(display, (0,150,0), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)    
+            pygame.draw.rect(ui_display, (0,150,0), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)    
         else:
-            pygame.draw.rect(display, (46,94,100), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)
-        pygame.draw.rect(display, (0,0,0), pygame.rect.Rect(left + 2, 225 + 2.5, 20 - 2.5, 20 - 2.5), border_radius=4)
+            pygame.draw.rect(ui_display, (46,94,100), pygame.rect.Rect(left, 225, 20, 20), border_radius=5)
+        pygame.draw.rect(ui_display, (0,0,0), pygame.rect.Rect(left + 2, 225 + 2.5, 20 - 2.5, 20 - 2.5), border_radius=4)
         if inventory[x][mapping[str(x)]] > 0:
-            display.blit(inven_items[mapping[str(x)]][1], (left + 2.2 , 225 + 2.2))
-            draw_text(str(inventory[x][mapping[str(x)]]), inven_font, (255,255,255), left + 9, 242, display)
+            ui_display.blit(inven_items[mapping[str(x)]][1], (left + 2.2 , 225 + 2.2))
+            draw_text(str(inventory[x][mapping[str(x)]]), inven_font, (255,255,255), left + 9, 242, ui_display)
             if pygame.rect.Rect(left, 225, 20, 20).collidepoint(mouse_pos[0], mouse_pos[1]):
                 current_overlay = x
-                draw_text(inven_items[mapping[str(x)]][2], element_font, (255,255,255), left - 15, 210, display)
+                draw_text(inven_items[mapping[str(x)]][2], element_font, (255,255,255), left - 15, 210, ui_display)
         left += 25
 
     #Drawing fusion rect
     if around_fusion_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
-        pygame.draw.rect(display, (0,150,0), around_fusion_rect, border_radius=9)
+        pygame.draw.rect(ui_display, (0,150,0), around_fusion_rect, border_radius=9)
     else:
-        pygame.draw.rect(display, (255,201,14), around_fusion_rect, border_radius=9)
-    pygame.draw.rect(display, (0,0,0), fusion_rect, border_radius=7)
+        pygame.draw.rect(ui_display, (255,201,14), around_fusion_rect, border_radius=9)
+    pygame.draw.rect(ui_display, (0,0,0), fusion_rect, border_radius=7)
     if len(fusion_dict) == 1:
         for key in fusion_dict.keys():
-            display.blit(entities[key], (fusion_rect.x + 4, fusion_rect.y + 5))
+            ui_display.blit(entities[key], (fusion_rect.x + 4, fusion_rect.y + 5))
     elif len(fusion_dict) > 1:
-        display.blit(fusion_display_tile, (fusion_rect.x + 4, fusion_rect.y + 5))
+        ui_display.blit(fusion_display_tile, (fusion_rect.x + 4, fusion_rect.y + 5))
 
     if click:
-        display.blit(inven_items[mapping[str(fusion[0])]][1], mouse_pos)
+        ui_display.blit(inven_items[mapping[str(fusion[0])]][1], mouse_pos)
     
     for s in sparks:
         s.move(1)
@@ -364,7 +374,7 @@ while run:
             fusion_rect.height = 40
             fusion_rect.x = 345
             fusion_rect.y = 205
-        pygame.draw.circle(display, (255,255,255), (370, 230), fusion_radius, 9)
+        pygame.draw.circle(ui_display, (255,255,255), (370, 230), fusion_radius, 9)
         fusion_radius += 20
     
     #Cycling the map
@@ -374,20 +384,20 @@ while run:
     if sceintist_speech_done:
         if list_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
             current_overlay = 5
-            pygame.draw.rect(display, (0,150,0), list_rect, border_radius=9)
+            pygame.draw.rect(ui_display, (0,150,0), list_rect, border_radius=9)
         else:
-            pygame.draw.rect(display, (255,201,14), list_rect, border_radius=9)
-        pygame.draw.rect(display, (0,0,0), list_black_rect, border_radius=4)
-        display.blit(list_img_logo, (20, 205))
+            pygame.draw.rect(ui_display, (255,201,14), list_rect, border_radius=9)
+        pygame.draw.rect(ui_display, (0,0,0), list_black_rect, border_radius=4)
+        ui_display.blit(list_img_logo, (20, 205))
 
     #Displaying list
     if display_list:
-        display.blit(list_img, (100, 50))
+        ui_display.blit(list_img, (100, 50))
         y = 0
         for pos, alloy in enumerate(levels):
             y += 40
             if alloy[2] == True:
-                display.blit(tick_img, (120, 50 + y))
+                ui_display.blit(tick_img, (120, 50 + y))
     
     #Checking if required alloy is fused
     for pos, alloy in enumerate(levels):
@@ -407,7 +417,7 @@ while run:
     if made_alloy[0] == True:
         flip = correct_alloy_imgs[made_alloy[1]].copy()
         flip = pygame.transform.scale(flip, (made_alloy_rect.width, made_alloy_rect.height))
-        display.blit(flip, made_alloy_rect)
+        ui_display.blit(flip, made_alloy_rect)
         if time - made_alloy_last_update > made_alloy_cooldown:
             made_alloy[0] = False
             made_alloy[1] = -1
@@ -486,4 +496,6 @@ while run:
                     click = False             
     surf = pygame.transform.scale(display, (screen_w, screen_h))
     screen.blit(surf, (0,0))
+    #"time" : t.time() - start_time,
+    shader_obj.draw({"tex" : screen, "noise_tex1": noise_img, "ui_tex" : ui_display}, { "itime": int((t.time() - start_time) * 100) })
     pygame.display.flip()
