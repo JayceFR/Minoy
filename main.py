@@ -118,9 +118,17 @@ bush_img_copy = pygame.image.load("./Assets/Sprites/bush.png").convert_alpha()
 bush_img = bush_img_copy.copy()
 bush_img = pygame.transform.scale(bush_img_copy, (bush_img_copy.get_width()*2, bush_img_copy.get_height()*2))
 bush_img.set_colorkey((0,0,0))
+tick_img = pygame.image.load("./Assets/Entities/tick.png").convert_alpha()
+tick_img.set_colorkey((0,0,0))
+list_img = pygame.image.load("./Assets/Entities/list.png").convert_alpha()
+list_img_logo = list_img.copy()
+list_img_logo = pygame.transform.scale(list_img, (40, 40))
+list_img_logo.set_colorkey((0,0,0))
+list_img.set_colorkey((0,0,0))
 element_sprite_sheet = pygame.image.load("./Assets/Entities/minerals.png").convert_alpha()
 right_shot_img_copy = pygame.image.load("./Assets/Entities/right_shot.png").convert_alpha()
 alloy_sprite_sheet = pygame.image.load("./Assets/Entities/fake_minerals.png").convert_alpha()
+correct_alloys = pygame.image.load("./Assets/Entities/alloy_imgs.png").convert_alpha()
 right_shot = []
 sparks = []
 for x in range(4):
@@ -133,6 +141,9 @@ for x in range(6):
 alloy_imgs = []
 for x in range(6):
     alloy_imgs.append(get_image(alloy_sprite_sheet, x, 16,16, 2, (0,0,0)))
+correct_alloy_imgs = []
+for x in range(3):
+    correct_alloy_imgs.append(get_image(correct_alloys, x, 25,25, 4, (0,0,0)))
 #Quantum
 player_idle_animation = []
 player_run_animation = []
@@ -199,11 +210,20 @@ click = False
 typer = typewriter.TypeWriter(element_font, (255,0,0), 20, 50, 400, 9)
 typer.write(['Hello world', 'I rock to the core you know that right, because i use shaders which uses moderngl and I love computer science'])
 done_typing = False
+display_list = False
+list_rect = pygame.rect.Rect(15, 200, 50, 50)
+list_black_rect = pygame.rect.Rect(19, 203, 44, 44)
+levels = [[{"c": 2, "s": 1}, "0", False], [{"l": 4, "c" : 2, "m" : 1}, "1", False], [{"s": 5, "a" : 1, "c": 1}, "2", False]]
+made_alloy = [False, -1]
+made_alloy_last_update = 0
+made_alloy_cooldown = 1200
+made_alloy_rect = pygame.rect.Rect(200, 40, 100, 100)
 while run:
     clock.tick(60)
     time = pygame.time.get_ticks()
     display.fill((0,0,0))
 
+    current_overlay = -1
     mouse_pos = list(pygame.mouse.get_pos())
     mouse_pos[0] //= 2
     mouse_pos[1] //= 2
@@ -263,7 +283,10 @@ while run:
         left += 25
 
     #Drawing fusion rect
-    pygame.draw.rect(display, (255,201,14), around_fusion_rect, border_radius=9)
+    if around_fusion_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
+        pygame.draw.rect(display, (0,150,0), around_fusion_rect, border_radius=9)
+    else:
+        pygame.draw.rect(display, (255,201,14), around_fusion_rect, border_radius=9)
     pygame.draw.rect(display, (0,0,0), fusion_rect, border_radius=7)
     if len(fusion_dict) == 1:
         for key in fusion_dict.keys():
@@ -298,6 +321,53 @@ while run:
     if player.rect.y > 1000:
         player.rect.y = -50
 
+    if list_rect.collidepoint(mouse_pos[0], mouse_pos[1]):
+        current_overlay = 5
+        pygame.draw.rect(display, (0,150,0), list_rect, border_radius=9)
+    else:
+        pygame.draw.rect(display, (255,201,14), list_rect, border_radius=9)
+    pygame.draw.rect(display, (0,0,0), list_black_rect, border_radius=4)
+    display.blit(list_img_logo, (20, 205))
+
+    #Displaying list
+    if display_list:
+        display.blit(list_img, (100, 50))
+        y = 0
+        for pos, alloy in enumerate(levels):
+            y += 40
+            if alloy[2] == True:
+                display.blit(tick_img, (120, 50 + y))
+    
+    #Checking if required alloy is fused
+    for pos, alloy in enumerate(levels):
+        equal = True
+        if alloy[2] == False:
+            if len(alloy[0]) == len(fusion_dict):
+                for key, value in alloy[0].items():
+                    if fusion_dict.get(key) != value:
+                        equal = False
+                if equal:
+                    fusion_dict = {}
+                    alloy[2] = True
+                    made_alloy[0] = True
+                    made_alloy[1] = pos
+                    made_alloy_last_update = time
+    
+    if made_alloy[0] == True:
+        flip = correct_alloy_imgs[made_alloy[1]].copy()
+        flip = pygame.transform.scale(flip, (made_alloy_rect.width, made_alloy_rect.height))
+        display.blit(flip, made_alloy_rect)
+        if time - made_alloy_last_update > made_alloy_cooldown:
+            made_alloy[0] = False
+            made_alloy[1] = -1
+            made_alloy_rect = pygame.rect.Rect(200, 40, 100, 100)
+        made_alloy_rect.x -= 5
+        made_alloy_rect.y += 5
+        if made_alloy_rect.width > 5 and made_alloy_rect.height > 5:
+            made_alloy_rect.width -= 2.5
+            made_alloy_rect.height -= 2.5
+    
+        
 
     dig_down = False
     dig_right = False
@@ -325,12 +395,23 @@ while run:
                     dig_last_update = time
             if event.key == pygame.K_SPACE:
                 print(inventory, fusion_dict)
+            if event.key == pygame.K_i:
+                if display_list:
+                    display_list = False
+                else:
+                    display_list = True
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 if not click:
+                    if display_list:
+                        display_list = False
                     if current_overlay >= 0 and current_overlay <= 4:
                         fusion[0] = current_overlay
                         click = True
+                    if current_overlay == 5:
+                        if not display_list:
+                            display_list = True
+                
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 if click:
@@ -344,9 +425,10 @@ while run:
                         fusion_display_tile = alloy_imgs[random.randint(0, len(alloy_imgs)-1)]
                         for x in range(50):
                             sparks.append(spark.Spark([fusion_rect.x + 15 ,fusion_rect.y + 15], math.radians(random.randint(0,360)), random.randint(2,5), (random.randint(0,255),random.randint(0,255),random.randint(0,255)), 2, 1))
-                    fusion_animation = True
-                    fusion_animation_last_update = time
-                    fusion_radius = 0
+                        fusion_animation = True
+                        fusion_animation_last_update = time
+                        fusion_radius = 0
+                    
                     click = False             
     surf = pygame.transform.scale(display, (screen_w, screen_h))
     screen.blit(surf, (0,0))

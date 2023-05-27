@@ -6,3 +6,4 @@ Babbit Metal -> 5 Tin 1 Antimony 1 Copper
 
 Elements -> Copper Tin Aluminium Manganese Antimony
 Elements -> C      S   L         M         A
+5C 6S 4L 1M 1A 

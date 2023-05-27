@@ -28,7 +28,7 @@ class Player():
         self.jump = False
         self.jump_last_update = 0
         self.jump_cooldown = 600
-        self.jump_up_spped = 7
+        self.jump_up_spped = 9
         self.air_timer = 0
 
     def draw(self, display, scroll):
@@ -76,7 +76,7 @@ class Player():
             else:
                 self.air_timer = 0
                 self.jump = False
-                self.jump_up_spped = 7
+                self.jump_up_spped = 9
         
 
         if self.show_right:
