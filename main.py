@@ -283,6 +283,8 @@ collected_mineral = False
 down_cooldown = 5000
 down_last_update = 0
 
+list_down_update = 0
+
 pygame.mixer.music.load("./Assets/Music/bg_song.wav")
 pygame.mixer.music.set_volume(0.2)
 pygame.mixer.music.play(-1)
@@ -361,6 +363,7 @@ while run:
         else:
             scientist_talk = False
             sceintist_speech_done = True
+            list_down_update = time
     
     #Scientist talk settings
     if player.get_rect().colliderect(scientist.get_rect()):
@@ -439,6 +442,9 @@ while run:
                 pygame.draw.rect(ui_display, (255,201,14), list_rect, border_radius=9)
             pygame.draw.rect(ui_display, (0,0,0), list_black_rect, border_radius=4)
             ui_display.blit(list_img_logo, (20, 205))
+            if time - list_down_update < down_cooldown:
+                draw_text("Click Me!", element_font, (255,255,255), 10, 150, ui_display)
+                ui_display.blit(down, (25, 170 + math.sin(time) * 2))
 
     #Displaying list
     if not game_ended:
